@@ -165,11 +165,11 @@ Status values: `To Do`, `In Progress`, `Done`.
 - [x] Open questions Q1–Q7 answered
 
 ### Phase 1 – Setup
-- [ ] Create GitHub repo (Q1/Q2)
-- [ ] Create Supabase project, EU region
+- [ ] Create GitHub repo (Q1/Q2) — **blocked on Ward**, see §8
+- [ ] Create Supabase project, EU region — **blocked on Ward**, see §8
 - [ ] Configure Auth: magic link, sign-up disabled, redirect URL = GitHub Pages URL
-- [ ] Scaffold Vite + React + TypeScript
-- [ ] GitHub Actions deploy to Pages, Supabase URL and anon key as repo secrets/vars
+- [x] Scaffold Vite + React + TypeScript
+- [x] GitHub Actions workflows written (`deploy.yml`, `keepalive.yml`, `backup.yml`) — need repo vars/secrets once repo + Supabase project exist
 - [ ] "Hello world" live online and able to read from Supabase
 
 ### Phase 2 – Database
@@ -231,15 +231,19 @@ Status values: `To Do`, `In Progress`, `Done`.
 |------|-------|--------|
 | 2026-10-06 | 0 | Requirements and stack decided, build plan created, `.instructions.md` rewritten for the tool |
 | 2026-10-06 | 0 | Open questions Q1–Q7 answered: new public repo `pm-tool`, Supabase free tier, Vite+React+TS confirmed, Q3 N/A (private Delaport tool, not a client/employer project) |
+| 2026-10-06 | 1 | Local scaffold done in this folder: `git init` (own repo, separate from VSStudio), Vite+React+TS, `@supabase/supabase-js` client (`src/lib/supabase.ts`, reads `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`), minimal Hello World page with a Supabase connection check, `.github/workflows/deploy.yml` + `keepalive.yml` + `backup.yml`. `npm run build` passes. First commit made locally. No `gh`/`supabase` CLI available in this environment — GitHub repo creation and Supabase project creation need to be done by Ward. |
 
 ---
 
 ## 8. Resume here (next session)
 
-Phase 0 is complete. Start **Phase 1 – Setup**:
-1. Create GitHub repo `pm-tool` (public)
-2. Create Supabase project, EU region
-3. Configure Auth: magic link, sign-up disabled
-4. Scaffold Vite + React + TypeScript
-5. GitHub Actions deploy to Pages, Supabase URL/anon key as repo secrets
-6. "Hello world" live online and able to read from Supabase
+Phase 0 done. Phase 1 local scaffold done (see progress log). **Blocked on Ward** for two account-level steps, then Phase 1 finishes itself:
+
+1. Create an empty public GitHub repo named `pm-tool` under your account (no README/license/gitignore — this folder already has them). Give me the remote URL and I'll add it and push the existing local commit.
+2. Create a Supabase project (EU region), enable magic-link auth with sign-up disabled. Share the **Project URL** and **anon key** (both safe to paste, not secrets) so I can:
+   - fill `.env.local` for local dev,
+   - set them as repo **variables** (not secrets) in GitHub Actions for the build,
+   - add `SUPABASE_DB_URL` as a repo **secret** (direct Postgres connection string, for `backup.yml` — needed later, not blocking),
+   - set the Pages URL as the Supabase Auth redirect URL once the repo + first deploy exist.
+
+Once both exist and are pushed, finish Phase 1 by confirming the GitHub Actions deploy succeeds and the Hello World page shows "✅ connected". Then move to **Phase 2 – Database** (migrations, RLS, views).
