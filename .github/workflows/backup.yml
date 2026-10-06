@@ -1,0 +1,23 @@
+name: Nightly Supabase backup
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # every day, 02:00 UTC
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump database
+        run: |
+          pg_dump "${{ secrets.SUPABASE_DB_URL }}" \
+            --no-owner --no-privileges -Fc \
+            -f "backup-$(date +%Y-%m-%d).dump"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-backup-${{ github.run_id }}
+          path: backup-*.dump
+          retention-days: 30
