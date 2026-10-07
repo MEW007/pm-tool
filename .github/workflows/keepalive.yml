@@ -9,8 +9,10 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase REST endpoint
+      - name: Ping Supabase auth endpoint
+        # /rest/v1/ root requires the service_role key on current Supabase gateways;
+        # /auth/v1/settings works with the anon key and is enough to count as activity.
         run: |
-          curl -sf "${{ vars.VITE_SUPABASE_URL }}/rest/v1/" \
+          curl -sf "${{ vars.VITE_SUPABASE_URL }}/auth/v1/settings" \
             -H "apikey: ${{ vars.VITE_SUPABASE_ANON_KEY }}" \
             -o /dev/null

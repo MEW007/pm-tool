@@ -165,12 +165,12 @@ Status values: `To Do`, `In Progress`, `Done`.
 - [x] Open questions Q1–Q7 answered
 
 ### Phase 1 – Setup
-- [ ] Create GitHub repo (Q1/Q2) — **blocked on Ward**, see §8
-- [ ] Create Supabase project, EU region — **blocked on Ward**, see §8
-- [ ] Configure Auth: magic link, sign-up disabled, redirect URL = GitHub Pages URL
+- [x] Create GitHub repo (Q1/Q2) — `github.com/MEW007/pm-tool`, public, local commits pushed
+- [x] Create Supabase project, EU region — `lnnitcjuhzxcjdqfxhpy.supabase.co`, anon key confirmed working (`/auth/v1/settings` → 200)
+- [ ] Configure Auth: magic link, sign-up disabled, redirect URL = GitHub Pages URL — sign-up is currently **enabled** by default, needs disabling once we build the login page (Phase 3); redirect URL needs the Pages URL, which needs the first deploy first
 - [x] Scaffold Vite + React + TypeScript
-- [x] GitHub Actions workflows written (`deploy.yml`, `keepalive.yml`, `backup.yml`) — need repo vars/secrets once repo + Supabase project exist
-- [ ] "Hello world" live online and able to read from Supabase
+- [x] GitHub Actions workflows written (`deploy.yml`, `keepalive.yml`, `backup.yml`) — `keepalive.yml` fixed to hit `/auth/v1/settings` (the `/rest/v1/` root now requires the service_role key on current Supabase gateways, confirmed by testing)
+- [ ] "Hello world" live online and able to read from Supabase — **blocked on Ward**, see §8 (needs repo vars + Pages enabled)
 
 ### Phase 2 – Database
 - [ ] Migration 001: tables + constraints
@@ -232,18 +232,20 @@ Status values: `To Do`, `In Progress`, `Done`.
 | 2026-10-06 | 0 | Requirements and stack decided, build plan created, `.instructions.md` rewritten for the tool |
 | 2026-10-06 | 0 | Open questions Q1–Q7 answered: new public repo `pm-tool`, Supabase free tier, Vite+React+TS confirmed, Q3 N/A (private Delaport tool, not a client/employer project) |
 | 2026-10-06 | 1 | Local scaffold done in this folder: `git init` (own repo, separate from VSStudio), Vite+React+TS, `@supabase/supabase-js` client (`src/lib/supabase.ts`, reads `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`), minimal Hello World page with a Supabase connection check, `.github/workflows/deploy.yml` + `keepalive.yml` + `backup.yml`. `npm run build` passes. First commit made locally. No `gh`/`supabase` CLI available in this environment — GitHub repo creation and Supabase project creation need to be done by Ward. |
+| 2026-10-07 | 1 | Ward created `github.com/MEW007/pm-tool` (public) and a Supabase project (`lnnitcjuhzxcjdqfxhpy.supabase.co`, EU). Pushed local commits to the new remote. Added `.env.local` for local dev (gitignored). Verified the anon key against the live project via curl (`/auth/v1/settings` → 200). Found `/rest/v1/` root now needs the service_role key on current Supabase gateways, not anon — fixed `keepalive.yml` to ping `/auth/v1/settings` instead. Still blocked on Ward for GitHub-side config, see §8. |
 
 ---
 
 ## 8. Resume here (next session)
 
-Phase 0 done. Phase 1 local scaffold done (see progress log). **Blocked on Ward** for two account-level steps, then Phase 1 finishes itself:
+Phase 0 and the local half of Phase 1 are done. Code is live at `github.com/MEW007/pm-tool`, Supabase project is live. **Blocked on Ward** for GitHub repo configuration (I have no `gh` CLI/API auth in this environment):
 
-1. Create an empty public GitHub repo named `pm-tool` under your account (no README/license/gitignore — this folder already has them). Give me the remote URL and I'll add it and push the existing local commit.
-2. Create a Supabase project (EU region), enable magic-link auth with sign-up disabled. Share the **Project URL** and **anon key** (both safe to paste, not secrets) so I can:
-   - fill `.env.local` for local dev,
-   - set them as repo **variables** (not secrets) in GitHub Actions for the build,
-   - add `SUPABASE_DB_URL` as a repo **secret** (direct Postgres connection string, for `backup.yml` — needed later, not blocking),
-   - set the Pages URL as the Supabase Auth redirect URL once the repo + first deploy exist.
+1. **Enable GitHub Pages**: repo Settings → Pages → Source: "GitHub Actions" (not a branch). Without this the `deploy.yml` workflow will fail at the `configure-pages`/`deploy-pages` steps.
+2. **Add repo variables** (Settings → Secrets and variables → Actions → **Variables** tab → "New repository variable"):
+   - `VITE_SUPABASE_URL` = `https://lnnitcjuhzxcjdqfxhpy.supabase.co`
+   - `VITE_SUPABASE_ANON_KEY` = (the anon key you shared)
+3. Push anything (or re-run the workflow from the Actions tab) to trigger `deploy.yml` and confirm it goes green, then open the Pages URL and check the Hello World page shows "✅ connected".
+4. Later, not blocking: add `SUPABASE_DB_URL` as a repo **secret** (direct Postgres connection string, Settings → Secrets tab, not Variables) once `backup.yml` is needed — it isn't used yet.
+5. Also later: in Supabase Auth settings, disable sign-up and set the site URL / redirect URL to the Pages URL once Phase 3 (login page) is built — sign-up is currently left enabled since there's no login page yet to restrict.
 
-Once both exist and are pushed, finish Phase 1 by confirming the GitHub Actions deploy succeeds and the Hello World page shows "✅ connected". Then move to **Phase 2 – Database** (migrations, RLS, views).
+Once the deploy is green and Supabase connection confirmed, Phase 1 is complete. Then move to **Phase 2 – Database** (migrations, RLS, views).
