@@ -4,7 +4,7 @@ Online project management tool for running projects through meetings, minutes, a
 
 - **Owner:** Ward Mertens
 - **Started:** 2026-10-06
-- **Status:** Phase 0 – Planning
+- **Status:** Phase 2 – Database
 
 ---
 
@@ -167,18 +167,23 @@ Status values: `To Do`, `In Progress`, `Done`.
 ### Phase 1 – Setup
 - [x] Create GitHub repo (Q1/Q2) — `github.com/MEW007/pm-tool`, public, local commits pushed
 - [x] Create Supabase project, EU region — `lnnitcjuhzxcjdqfxhpy.supabase.co`, anon key confirmed working (`/auth/v1/settings` → 200)
-- [ ] Configure Auth: magic link, sign-up disabled, redirect URL = GitHub Pages URL — sign-up is currently **enabled** by default, needs disabling once we build the login page (Phase 3); redirect URL needs the Pages URL, which needs the first deploy first
+- [ ] Configure Auth: magic link, sign-up disabled, redirect URL = GitHub Pages URL — deferred to Phase 3 (needs the login page to exist first); sign-up left enabled until then
 - [x] Scaffold Vite + React + TypeScript
 - [x] GitHub Actions workflows written (`deploy.yml`, `keepalive.yml`, `backup.yml`) — `keepalive.yml` fixed to hit `/auth/v1/settings` (the `/rest/v1/` root now requires the service_role key on current Supabase gateways, confirmed by testing)
-- [ ] "Hello world" live online and able to read from Supabase — **blocked on Ward**, see §8 (needs repo vars + Pages enabled)
+- [x] "Hello world" live online and able to read from Supabase — confirmed green, page shows "✅ connected"
 
 ### Phase 2 – Database
-- [ ] Migration 001: tables + constraints
-- [ ] Migration 002: RLS policies
-- [ ] Migration 003: views
-- [ ] Triggers: refs (`WPM-03-02`, `R-001`), follow-up numbering, auto-create action/risk from minute item, close fields
-- [ ] Seed demo project
-- [ ] Test RLS with two users in two projects
+Written as 4 migration files instead of the original 3 (triggers need the tables
+to exist and RLS's helper functions are easiest to read next to the policies
+that use them, so they got their own file rather than being folded into 001/003):
+- [x] `001_tables.sql` — tables + constraints
+- [x] `002_functions_triggers.sql` — refs (`WPM-03-02`, `R-001`), follow-up numbering, auto-create action/risk from minute item, close fields, `auth.users` → `profiles` sync
+- [x] `003_rls.sql` — RLS policies + helper functions (`is_project_member/editor/admin`)
+- [x] `004_views.sql` — `v_open_actions`, `v_action_timeline`, `v_decision_log`, `v_dashboard_counts`
+- [x] `seed.sql` — demo project, 3 members, a series, 2 meetings, 3 minute items (exercises the triggers)
+- [x] Verified against a real local Postgres 16 (installed via `brew install postgresql@16`, left installed for future migration testing — not part of the app, just a dev tool). Stubbed `auth.users`/`auth.uid()` and the `anon`/`authenticated` roles to approximate what Supabase provides, then ran all 4 migrations + seed and checked the results by hand (see progress log for what was tested and the 2 bugs this caught).
+- [ ] Apply migrations + seed to the live Supabase project — **blocked on Ward**, see §8 (no DB credentials in this environment)
+- [ ] Test RLS with two users in two projects on the **live** project too, once applied — the local test covered the policy logic, but worth a real sanity check with real magic-link logins
 
 ### Phase 3 – Login and project selection
 - [ ] Login page (magic link)
@@ -232,20 +237,23 @@ Status values: `To Do`, `In Progress`, `Done`.
 | 2026-10-06 | 0 | Requirements and stack decided, build plan created, `.instructions.md` rewritten for the tool |
 | 2026-10-06 | 0 | Open questions Q1–Q7 answered: new public repo `pm-tool`, Supabase free tier, Vite+React+TS confirmed, Q3 N/A (private Delaport tool, not a client/employer project) |
 | 2026-10-06 | 1 | Local scaffold done in this folder: `git init` (own repo, separate from VSStudio), Vite+React+TS, `@supabase/supabase-js` client (`src/lib/supabase.ts`, reads `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`), minimal Hello World page with a Supabase connection check, `.github/workflows/deploy.yml` + `keepalive.yml` + `backup.yml`. `npm run build` passes. First commit made locally. No `gh`/`supabase` CLI available in this environment — GitHub repo creation and Supabase project creation need to be done by Ward. |
-| 2026-10-07 | 1 | Ward created `github.com/MEW007/pm-tool` (public) and a Supabase project (`lnnitcjuhzxcjdqfxhpy.supabase.co`, EU). Pushed local commits to the new remote. Added `.env.local` for local dev (gitignored). Verified the anon key against the live project via curl (`/auth/v1/settings` → 200). Found `/rest/v1/` root now needs the service_role key on current Supabase gateways, not anon — fixed `keepalive.yml` to ping `/auth/v1/settings` instead. Still blocked on Ward for GitHub-side config, see §8. |
+| 2026-10-07 | 1 | Ward created `github.com/MEW007/pm-tool` (public) and a Supabase project (`lnnitcjuhzxcjdqfxhpy.supabase.co`, EU). Pushed local commits to the new remote. Added `.env.local` for local dev (gitignored). Verified the anon key against the live project via curl (`/auth/v1/settings` → 200). Found `/rest/v1/` root now needs the service_role key on current Supabase gateways, not anon — fixed `keepalive.yml` to ping `/auth/v1/settings` instead. |
+| 2026-10-07 | 1 | Ward enabled GitHub Pages and added the repo variables. Deploy workflow went green, Hello World confirmed "✅ connected". **Phase 1 complete.** |
+| 2026-10-07 | 2 | Wrote `001_tables.sql`, `002_functions_triggers.sql`, `003_rls.sql`, `004_views.sql`, `seed.sql`. Installed Postgres 16 locally (`brew install postgresql@16`) to test before touching the live project: stubbed `auth.users`/`auth.uid()`/`anon`/`authenticated` to approximate Supabase, ran all 4 migrations + seed, then checked results by hand. Caught and fixed 2 real bugs this way: (1) `meeting_attendees`'s combined `for all` RLS policy only had the "issued meeting" gate in `USING`, which Postgres doesn't consult for INSERT — fixed by repeating the gate in `WITH CHECK` too. (2) the `project_members` bootstrap-insert policy ("first member of a new project can self-admin") used a raw `NOT EXISTS` subquery against `project_members`, which is itself RLS-protected — a non-member would see zero rows regardless of whether the project already had members, so **anyone could have added themselves as admin to any existing project**. Fixed with a dedicated `SECURITY DEFINER` helper (`project_has_no_members`) that bypasses RLS for that specific check. Re-tested after each fix: confirmed an outsider is denied joining the existing demo project but can bootstrap a brand new one; confirmed editors are blocked from editing an issued meeting while admins can override; confirmed admin-only series-management and delete policies hold; confirmed the `auth.users` → `profiles` sync trigger, meeting auto-numbering, attendee copy-forward, ref generation (`WPM-01-02`, `R-001`), and the action/risk auto-creation from minute items all produce correct data. |
 
 ---
 
 ## 8. Resume here (next session)
 
-Phase 0 and the local half of Phase 1 are done. Code is live at `github.com/MEW007/pm-tool`, Supabase project is live. **Blocked on Ward** for GitHub repo configuration (I have no `gh` CLI/API auth in this environment):
+Phase 0 and Phase 1 are complete and confirmed live. Phase 2's migrations are written and tested locally (see progress log) but **not yet applied to the live Supabase project** — that needs Ward, since this environment has no DB credentials (only the anon key, which can't run DDL):
 
-1. **Enable GitHub Pages**: repo Settings → Pages → Source: "GitHub Actions" (not a branch). Without this the `deploy.yml` workflow will fail at the `configure-pages`/`deploy-pages` steps.
-2. **Add repo variables** (Settings → Secrets and variables → Actions → **Variables** tab → "New repository variable"):
-   - `VITE_SUPABASE_URL` = `https://lnnitcjuhzxcjdqfxhpy.supabase.co`
-   - `VITE_SUPABASE_ANON_KEY` = (the anon key you shared)
-3. Push anything (or re-run the workflow from the Actions tab) to trigger `deploy.yml` and confirm it goes green, then open the Pages URL and check the Hello World page shows "✅ connected".
-4. Later, not blocking: add `SUPABASE_DB_URL` as a repo **secret** (direct Postgres connection string, Settings → Secrets tab, not Variables) once `backup.yml` is needed — it isn't used yet.
-5. Also later: in Supabase Auth settings, disable sign-up and set the site URL / redirect URL to the Pages URL once Phase 3 (login page) is built — sign-up is currently left enabled since there's no login page yet to restrict.
+1. Open the Supabase Dashboard → SQL Editor for the `pm-tool` project.
+2. Run these 5 files **in order**, each as its own query (they're idempotent-ish but not written to be re-run blindly — run each once):
+   - `supabase/migrations/001_tables.sql`
+   - `supabase/migrations/002_functions_triggers.sql`
+   - `supabase/migrations/003_rls.sql`
+   - `supabase/migrations/004_views.sql`
+   - `supabase/seed.sql` (optional — creates a `DEMO` project with fake data, no real logins; safe to run, safe to skip)
+3. Tell me once that's done and I'll sanity-check the live project (e.g. query `v_dashboard_counts`) and we'll move to **Phase 3 – Login and project selection**.
 
-Once the deploy is green and Supabase connection confirmed, Phase 1 is complete. Then move to **Phase 2 – Database** (migrations, RLS, views).
+Note for later, not blocking: a local Postgres 16 is now installed on this machine (via Homebrew) purely as a dev/test tool — it's not part of the app and nothing deploys from it. Useful for testing future migrations the same way before they touch the live project.
