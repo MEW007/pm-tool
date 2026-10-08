@@ -1,8 +1,16 @@
 -- Read views backing the Dashboard, Actions and Decisions pages (BUILD_PLAN.md §3.7).
--- Views run with the privileges of the querying user (standard Postgres view
--- behaviour), so the RLS policies from 003_rls.sql still apply through them.
+--
+-- security_invoker = true is required on every one of these: by default a
+-- Postgres view runs with the privileges of its OWNER (the role that ran
+-- this migration), not the querying user, which silently bypasses the RLS
+-- policies from 003_rls.sql on every underlying table. Without this, any
+-- anon/authenticated caller can read every project's data through the view
+-- regardless of membership -- confirmed and fixed live, see BUILD_PLAN.md
+-- progress log.
 
-create view v_open_actions as
+create view v_open_actions
+with (security_invoker = true)
+as
 select
   a.*,
   m.name as owner_name,
@@ -15,7 +23,9 @@ where a.status not in ('done', 'cancelled');
 -- One row per event in an action's life: the meeting it was raised in, plus
 -- every later action_update. Issued minutes read this view filtered to their
 -- own meeting_id to show the status "as of" that meeting, never today's status.
-create view v_action_timeline as
+create view v_action_timeline
+with (security_invoker = true)
+as
 select
   a.id as action_id,
   mi.meeting_id,
@@ -57,7 +67,9 @@ left join meeting_series ms on ms.id = m.series_id
 
 order by action_id, created_at;
 
-create view v_decision_log as
+create view v_decision_log
+with (security_invoker = true)
+as
 select
   mi.id as minute_item_id,
   mi.project_id,
@@ -76,7 +88,9 @@ join meeting_series ms on ms.id = m.series_id
 where mi.type = 'decision'
 order by mi.created_at desc;
 
-create view v_dashboard_counts as
+create view v_dashboard_counts
+with (security_invoker = true)
+as
 select
   p.id as project_id,
   (select count(*) from actions a where a.project_id = p.id and a.status not in ('done', 'cancelled')) as actions_open,
