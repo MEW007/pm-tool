@@ -4,7 +4,7 @@ Online project management tool for running projects through meetings, minutes, a
 
 - **Owner:** Ward Mertens
 - **Started:** 2026-10-06
-- **Status:** Phase 2 – Database
+- **Status:** Phase 3 – Login and project selection
 
 ---
 
@@ -183,9 +183,9 @@ that use them, so they got their own file rather than being folded into 001/003)
 - [x] `005_views_security_invoker.sql` — patches the 4 views already live on the project (see progress log: this fixes a confirmed live data leak)
 - [x] `seed.sql` — demo project, 3 members, a series, 2 meetings, 3 minute items (exercises the triggers)
 - [x] Verified against a real local Postgres 16 (installed via `brew install postgresql@16`, left installed for future migration testing — not part of the app, just a dev tool). Stubbed `auth.users`/`auth.uid()` and the `anon`/`authenticated` roles to approximate what Supabase provides, then ran all migrations + seed and checked the results by hand (see progress log for what was tested and the bugs this caught).
-- [x] Applied `001`–`004` + seed to the live Supabase project (Ward, via SQL Editor)
-- [ ] Apply `005_views_security_invoker.sql` to the live project — **blocked on Ward**, see §8. This one matters more than a normal migration: until it's applied, the dashboard/action/decision views are readable by anyone, logged in or not.
-- [ ] Test RLS with two users in two projects on the **live** project too, once applied — the local test covered the policy logic, but worth a real sanity check with real magic-link logins
+- [x] Applied `001`–`005` + seed to the live Supabase project (Ward, via SQL Editor)
+- [x] Confirmed live via curl with the anon key: all 4 views now correctly return nothing to an unauthenticated request. **Phase 2 complete.**
+- [ ] Test RLS with two users in two projects on the **live** project — the local test covered the policy logic and the view-security fix, but worth a real sanity check with real magic-link logins once Phase 3's login page exists
 
 ### Phase 3 – Login and project selection
 - [ ] Login page (magic link)
@@ -242,18 +242,19 @@ that use them, so they got their own file rather than being folded into 001/003)
 | 2026-10-07 | 1 | Ward created `github.com/MEW007/pm-tool` (public) and a Supabase project (`lnnitcjuhzxcjdqfxhpy.supabase.co`, EU). Pushed local commits to the new remote. Added `.env.local` for local dev (gitignored). Verified the anon key against the live project via curl (`/auth/v1/settings` → 200). Found `/rest/v1/` root now needs the service_role key on current Supabase gateways, not anon — fixed `keepalive.yml` to ping `/auth/v1/settings` instead. |
 | 2026-10-07 | 1 | Ward enabled GitHub Pages and added the repo variables. Deploy workflow went green, Hello World confirmed "✅ connected". **Phase 1 complete.** |
 | 2026-10-07 | 2 | Wrote `001_tables.sql`, `002_functions_triggers.sql`, `003_rls.sql`, `004_views.sql`, `seed.sql`. Installed Postgres 16 locally (`brew install postgresql@16`) to test before touching the live project: stubbed `auth.users`/`auth.uid()`/`anon`/`authenticated` to approximate Supabase, ran all 4 migrations + seed, then checked results by hand. Caught and fixed 2 real bugs this way: (1) `meeting_attendees`'s combined `for all` RLS policy only had the "issued meeting" gate in `USING`, which Postgres doesn't consult for INSERT — fixed by repeating the gate in `WITH CHECK` too. (2) the `project_members` bootstrap-insert policy ("first member of a new project can self-admin") used a raw `NOT EXISTS` subquery against `project_members`, which is itself RLS-protected — a non-member would see zero rows regardless of whether the project already had members, so **anyone could have added themselves as admin to any existing project**. Fixed with a dedicated `SECURITY DEFINER` helper (`project_has_no_members`) that bypasses RLS for that specific check. Re-tested after each fix: confirmed an outsider is denied joining the existing demo project but can bootstrap a brand new one; confirmed editors are blocked from editing an issued meeting while admins can override; confirmed admin-only series-management and delete policies hold; confirmed the `auth.users` → `profiles` sync trigger, meeting auto-numbering, attendee copy-forward, ref generation (`WPM-01-02`, `R-001`), and the action/risk auto-creation from minute items all produce correct data. |
-| 2026-10-08 | 2 | Ward applied `001`–`004` + `seed.sql` to the live project via the SQL Editor (a confusing first pass where 001 needed re-running, then 004 briefly errored "already exists" because an earlier attempt had already succeeded — resolved by a diagnostic query confirming 16 tables/views, 11 functions, 33 policies, all matching expectations exactly). As a live sanity check, queried the project with the anon key via curl and found a real, **live, unauthenticated data leak**: `v_dashboard_counts`, `v_open_actions` and `v_action_timeline` returned real seed data to a request with no login at all (`v_decision_log` only looked safe because it had no rows yet — same bug). Root cause: a Postgres view runs with its **owner's** privileges by default, not the querying user's, so a view created by a privileged migration role silently bypasses RLS on its underlying tables unless declared `security_invoker`. Fixed `004_views.sql` for future from-scratch rebuilds and wrote `005_views_security_invoker.sql` to patch the views that already exist live. Re-ran the full local test (fresh cluster, stub, 001→004, grants, seed) to confirm: anon now gets 0 rows from all 4 views, while a real member (`set app.uid` to a linked profile) still sees their project's data correctly through them. `005` is written but **not yet applied to the live project** — until it is, the leak above is still live. |
+| 2026-10-08 | 2 | Ward applied `001`–`004` + `seed.sql` to the live project via the SQL Editor (a confusing first pass where 001 needed re-running, then 004 briefly errored "already exists" because an earlier attempt had already succeeded — resolved by a diagnostic query confirming 16 tables/views, 11 functions, 33 policies, all matching expectations exactly). As a live sanity check, queried the project with the anon key via curl and found a real, **live, unauthenticated data leak**: `v_dashboard_counts`, `v_open_actions` and `v_action_timeline` returned real seed data to a request with no login at all (`v_decision_log` only looked safe because it had no rows yet — same bug). Root cause: a Postgres view runs with its **owner's** privileges by default, not the querying user's, so a view created by a privileged migration role silently bypasses RLS on its underlying tables unless declared `security_invoker`. Fixed `004_views.sql` for future from-scratch rebuilds and wrote `005_views_security_invoker.sql` to patch the views that already exist live. Re-ran the full local test (fresh cluster, stub, 001→004, grants, seed) to confirm: anon now gets 0 rows from all 4 views, while a real member (`set app.uid` to a linked profile) still sees their project's data correctly through them. |
+| 2026-10-08 | 2 | Ward applied `005` to the live project. Re-verified live via curl with the anon key: all 4 views now correctly return `[]` to an unauthenticated request. **Phase 2 complete.** |
 
 ---
 
 ## 8. Resume here (next session)
 
-**Urgent, do this first:** run `supabase/migrations/005_views_security_invoker.sql` in the Supabase SQL Editor for `pm-tool`. Until this runs, `v_dashboard_counts`, `v_open_actions`, `v_action_timeline` and `v_decision_log` are readable by anyone with no login at all (see progress log 2026-10-08). It's 4 short `ALTER VIEW` statements, takes seconds. Only demo data is at risk right now, but fix it before putting any real data in.
+Phase 0–2 are all complete and confirmed live (Pages deployed, Supabase schema + RLS + views applied, the view-security leak found and fixed and re-verified live). Next up is **Phase 3 – Login and project selection**:
 
-After that, Phase 2 is otherwise done (001–004 + seed already applied and verified). Still open:
-
-- [ ] Test RLS with two users in two projects on the **live** project — the local test covered the policy logic including the view-security fix, but worth a real sanity check with real magic-link logins once Phase 3 exists.
-
-Then move to **Phase 3 – Login and project selection**.
+- [ ] Login page (magic link)
+- [ ] Project selector
+- [ ] Project shell with navigation
+- [ ] Create project (admin)
+- [ ] Once the login page exists: disable Supabase sign-up, set the site/redirect URL to the Pages URL, and do the still-open "two users in two projects" RLS sanity check with real logins
 
 Note for later, not blocking: a local Postgres 16 is now installed on this machine (via Homebrew) purely as a dev/test tool — it's not part of the app and nothing deploys from it. Useful for testing future migrations the same way before they touch the live project.
