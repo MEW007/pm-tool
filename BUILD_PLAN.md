@@ -188,10 +188,12 @@ that use them, so they got their own file rather than being folded into 001/003)
 - [ ] Test RLS with two users in two projects on the **live** project — the local test covered the policy logic and the view-security fix, but worth a real sanity check with real magic-link logins once Phase 3's login page exists
 
 ### Phase 3 – Login and project selection
-- [ ] Login page (magic link)
-- [ ] Project selector
-- [ ] Project shell with navigation
-- [ ] Create project (admin)
+- [x] Login page (magic link) — `src/pages/Login.tsx`
+- [x] Project selector — `src/pages/ProjectSelect.tsx`, lists projects via plain `select * from projects` (RLS does the member-filtering, no explicit WHERE needed)
+- [x] Project shell with navigation — `src/pages/ProjectShell.tsx`, left nav per §3.2 (Settings link hidden unless `is_project_admin`); Meetings/Actions/Decisions/Risks/Team/Settings are `ComingSoon` placeholders until their own phase
+- [x] Create project (admin) — in `ProjectSelect.tsx`: inserts the project, then bootstraps the creator as its first `admin` member (relies on the `project_has_no_members` RLS fix from Phase 2)
+- [x] Switched router from the planned default to `HashRouter`, and Supabase client to `flowType: 'pkce'` — see progress log, this is load-bearing for GitHub Pages + magic-link auth working together, not a style choice
+- [ ] **Not yet tested with a real magic-link email round trip** — blocked on Ward, see §8. Build/typecheck pass and the unauthenticated redirect logic was checked, but nobody has actually clicked a real email link against the live deploy yet.
 
 ### Phase 4 – Team
 - [ ] Team list, add/edit/deactivate member
@@ -244,17 +246,22 @@ that use them, so they got their own file rather than being folded into 001/003)
 | 2026-10-07 | 2 | Wrote `001_tables.sql`, `002_functions_triggers.sql`, `003_rls.sql`, `004_views.sql`, `seed.sql`. Installed Postgres 16 locally (`brew install postgresql@16`) to test before touching the live project: stubbed `auth.users`/`auth.uid()`/`anon`/`authenticated` to approximate Supabase, ran all 4 migrations + seed, then checked results by hand. Caught and fixed 2 real bugs this way: (1) `meeting_attendees`'s combined `for all` RLS policy only had the "issued meeting" gate in `USING`, which Postgres doesn't consult for INSERT — fixed by repeating the gate in `WITH CHECK` too. (2) the `project_members` bootstrap-insert policy ("first member of a new project can self-admin") used a raw `NOT EXISTS` subquery against `project_members`, which is itself RLS-protected — a non-member would see zero rows regardless of whether the project already had members, so **anyone could have added themselves as admin to any existing project**. Fixed with a dedicated `SECURITY DEFINER` helper (`project_has_no_members`) that bypasses RLS for that specific check. Re-tested after each fix: confirmed an outsider is denied joining the existing demo project but can bootstrap a brand new one; confirmed editors are blocked from editing an issued meeting while admins can override; confirmed admin-only series-management and delete policies hold; confirmed the `auth.users` → `profiles` sync trigger, meeting auto-numbering, attendee copy-forward, ref generation (`WPM-01-02`, `R-001`), and the action/risk auto-creation from minute items all produce correct data. |
 | 2026-10-08 | 2 | Ward applied `001`–`004` + `seed.sql` to the live project via the SQL Editor (a confusing first pass where 001 needed re-running, then 004 briefly errored "already exists" because an earlier attempt had already succeeded — resolved by a diagnostic query confirming 16 tables/views, 11 functions, 33 policies, all matching expectations exactly). As a live sanity check, queried the project with the anon key via curl and found a real, **live, unauthenticated data leak**: `v_dashboard_counts`, `v_open_actions` and `v_action_timeline` returned real seed data to a request with no login at all (`v_decision_log` only looked safe because it had no rows yet — same bug). Root cause: a Postgres view runs with its **owner's** privileges by default, not the querying user's, so a view created by a privileged migration role silently bypasses RLS on its underlying tables unless declared `security_invoker`. Fixed `004_views.sql` for future from-scratch rebuilds and wrote `005_views_security_invoker.sql` to patch the views that already exist live. Re-ran the full local test (fresh cluster, stub, 001→004, grants, seed) to confirm: anon now gets 0 rows from all 4 views, while a real member (`set app.uid` to a linked profile) still sees their project's data correctly through them. |
 | 2026-10-08 | 2 | Ward applied `005` to the live project. Re-verified live via curl with the anon key: all 4 views now correctly return `[]` to an unauthenticated request. **Phase 2 complete.** |
+| 2026-10-09 | 3 | Built `Login.tsx` (magic link via `signInWithOtp`), `AuthContext.tsx` (session tracking), `ProjectSelect.tsx` (list + create project), `ProjectContext.tsx` + `ProjectShell.tsx` (per-project nav, admin-gated Settings link), and `ComingSoon.tsx` placeholders for the nav items that belong to later phases. Wired up in `App.tsx` with `react-router-dom`. `npm run build` passes. Caught two real issues through reasoning about the deployment target rather than just compiling: (1) the plan's default `BrowserRouter` would 404 on refresh/deep-link on GitHub Pages, which has no server-side rewrite to `index.html` — switched to `HashRouter`. (2) `HashRouter` and Supabase's default implicit-flow magic link both use the URL **hash fragment**, which would collide (React Router would try to route to the literal token string) — switched the Supabase client to `flowType: 'pkce'`, which delivers the token as a `?code=` query param instead, sidestepping the conflict entirely. No real browser-automation tool was available in this environment (`WebFetch` explicitly doesn't support `localhost`), so verification was: `tsc -b` + `vite build` clean, dev server serves all routes/assets with no console errors in the log, and the redirect/routing logic was checked by reading the code rather than clicking through it. **The actual magic-link email round trip has not been tested against the live deploy.** |
 
 ---
 
 ## 8. Resume here (next session)
 
-Phase 0–2 are all complete and confirmed live (Pages deployed, Supabase schema + RLS + views applied, the view-security leak found and fixed and re-verified live). Next up is **Phase 3 – Login and project selection**:
+Phase 0–2 are complete and confirmed live. Phase 3's code is written and builds clean, but **untested against the real live flow** — needs Ward:
 
-- [ ] Login page (magic link)
-- [ ] Project selector
-- [ ] Project shell with navigation
-- [ ] Create project (admin)
-- [ ] Once the login page exists: disable Supabase sign-up, set the site/redirect URL to the Pages URL, and do the still-open "two users in two projects" RLS sanity check with real logins
+1. Push is already done (see below) — pull the latest `main`, or just wait for the GitHub Actions deploy to go green, then open the Pages URL.
+2. Try signing in with your own email. Watch for:
+   - Does the magic-link email actually arrive?
+   - Clicking it — do you land back on the app **signed in** (not stuck on an error, not looping back to the login page)?
+   - Can you create a project, see it in the list, and does the project shell's nav show up (with **Settings** visible, since you'd be that project's admin)?
+3. If anything misbehaves, tell me what you saw (URL after clicking the link is the most useful thing to paste if it goes wrong) and I'll dig in — the PKCE/HashRouter interaction is reasoned through but not yet proven against the real Supabase email flow.
+4. Once that works: in Supabase Auth settings, disable sign-up (magic link should only work for people already added as a project member... though actually, re-check this against how `signInWithOtp` behaves for an email with no `auth.users` row yet — this needs a decision, not just a toggle, since `project_members` rows can exist for people with no login yet, see BUILD_PLAN §3.3). Also set the Supabase site URL to the Pages URL.
+5. Then the still-open RLS sanity check: two real logins, two different projects, confirm each only sees their own.
+6. Then **Phase 4 – Team**.
 
 Note for later, not blocking: a local Postgres 16 is now installed on this machine (via Homebrew) purely as a dev/test tool — it's not part of the app and nothing deploys from it. Useful for testing future migrations the same way before they touch the live project.

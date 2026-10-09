@@ -10,4 +10,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// PKCE delivers the magic-link token as a ?code= query param instead of a
+// #access_token hash fragment. We need that: the app uses HashRouter (so
+// GitHub Pages, which has no server-side rewrite, doesn't 404 on refresh or
+// deep links), and a hash-fragment token would collide with React Router
+// reading that same fragment as a route.
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: { flowType: 'pkce' },
+})
