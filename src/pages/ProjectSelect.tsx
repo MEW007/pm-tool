@@ -68,8 +68,17 @@ export default function ProjectSelect() {
 
   if (projects === null) return <main style={{ padding: '2rem' }}>Loading…</main>
 
+  // TEMPORARY debug line to diagnose the "new row violates row-level security
+  // policy for table projects" issue -- remove once resolved.
+  const decoded = session
+    ? JSON.parse(atob(session.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    : null
+
   return (
     <main style={{ fontFamily: 'sans-serif', padding: '2rem', maxWidth: 500 }}>
+      <pre style={{ background: '#eee', padding: '1rem', fontSize: '0.8em', overflow: 'auto' }}>
+        DEBUG session token: {decoded ? JSON.stringify({ role: decoded.role, email: decoded.email, exp: new Date(decoded.exp * 1000).toISOString() }, null, 2) : 'no session'}
+      </pre>
       <h1>Your projects</h1>
       {error && <p style={{ color: 'crimson' }}>{error}</p>}
 
