@@ -1,8 +1,11 @@
 name: Nightly Supabase backup
 
 on:
-  schedule:
-    - cron: '0 2 * * *' # every day, 02:00 UTC
+  # Paused until SUPABASE_DB_URL is set up (Phase 9) -- it was failing every
+  # night with no connection string to dump from. Re-enable the schedule once
+  # that secret exists; workflow_dispatch still works for a manual test run.
+  # schedule:
+  #   - cron: '0 2 * * *' # every day, 02:00 UTC
   workflow_dispatch:
 
 jobs:

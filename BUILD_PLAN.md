@@ -230,7 +230,7 @@ that use them, so they got their own file rather than being folded into 001/003)
 
 ### Phase 9 – Hardening
 - [ ] Keep-alive job (free tier)
-- [ ] Nightly backup job
+- [ ] Nightly backup job — `backup.yml` exists but its schedule is **paused** (commented out) because it was failing every night with no `SUPABASE_DB_URL` secret configured, emailing Ward. To finish: add that secret (Supabase Settings → Database → Connection string → the URI one, as a GitHub repo **secret**, not variable), then uncomment the `schedule:` block in `.github/workflows/backup.yml`.
 - [ ] Audit: created_by / updated_by on all tables
 - [ ] Test with real project data (after Q3)
 - [ ] Short user guide in README
