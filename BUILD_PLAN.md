@@ -199,8 +199,9 @@ that use them, so they got their own file rather than being folded into 001/003)
 - [ ] Still open, not blocking further phases: drop the leftover `rls_test` diagnostic table (`drop table if exists rls_test;`); the two-user/two-project RLS sanity check; the sign-up-disable decision for `project_members` rows with no linked login yet (§3.3) — see §8
 
 ### Phase 4 – Team
-- [ ] Team list, add/edit/deactivate member
-- [ ] Invite member as user (link login + access level)
+- [x] Team list, add/edit/deactivate member — `src/pages/Team.tsx`. Admin-only (gated both in the UI via `isAdmin` and independently by RLS). "Deactivate" is the existing `is_active` toggle in the edit form, no separate delete button (matches the schema's soft-disable design).
+- [x] Invite member as user (link login + access level) — no Admin API/service-role key available client-side, so this is self-serve: the person signs in once via the normal Login page (creating their `profiles` row automatically), then an admin uses "Link login" on their team row, matching by email against `profiles`, and sets `access_level`.
+- [ ] Not yet tested live — needs Ward, see §8
 
 ### Phase 5 – Meetings and minutes
 - [ ] Meeting series management
@@ -270,18 +271,26 @@ built.
 | 2026-10-10/11 | 3 | Ward's magic link redirected to `localhost:3000` — the Supabase project's Site URL/Redirect URLs were still the default placeholder, never updated to the Pages URL, so Supabase ignored the app's `emailRedirectTo` and fell back to the default. Ward fixed it in Supabase Auth → URL Configuration. Login then worked. |
 | 2026-10-11/13 | 3 | **Long debugging session**: "create project" failed with `new row violates row-level security policy for table "projects"`. Ruled out, in order, with live evidence each time: the RLS policy itself (confirmed via `pg_policies`: correct, permissive, `with_check=true`, role `authenticated`); table-level grants (confirmed `authenticated` has INSERT via `information_schema.table_privileges`); the client not really being authenticated (confirmed via the Network tab: a real `Bearer` JWT was sent, and Supabase's own `sb-jwt-*` response headers confirmed the gateway validated it with `role: authenticated`); the `authenticator`→`authenticated` role-switch permission (confirmed via `pg_auth_members`); and reproduced the exact failure directly in the SQL Editor via `set role authenticated; insert ...` (ruling out the API/network layer entirely) — even on a **brand-new, minimal test table** (`rls_test`) with nothing but a trivial `with check (true)` policy, on a completely fresh local Postgres 17.11 instance with zero Supabase involved. Isolated the actual trigger empirically: the failure only happens when the INSERT uses `RETURNING` (i.e. `.insert().select()` in supabase-js) — a plain `INSERT` with no `RETURNING` succeeds every time. **Root cause**: Postgres requires a row to also satisfy a `SELECT` RLS policy before it can be handed back via `RETURNING`, not just the `INSERT` policy's `WITH CHECK`. `projects_select` requires project membership (`is_project_member`), and a brand-new project has no `project_members` row yet — that gets inserted in a *second*, later call. So the create-project flow was asking Postgres to return a row the user wasn't yet "visible" enough to see, even though they were unconditionally allowed to insert it. This is genuine, correct (if easy to miss) Postgres RLS behavior, not a bug in Postgres, Supabase, or our RLS policies. **Fix**: `ProjectSelect.tsx` now generates the project's `id` client-side with `crypto.randomUUID()` and inserts without `.select()`, so there's no `RETURNING` to trip over; the id is already known so no read-back is needed. `project_members`'s insert was already written without `.select()`, so it was never affected. Left behind on the live project from this debugging: a throwaway `rls_test` table (no data, no policy worth keeping) — still needs dropping. |
 | 2026-10-13 | 3 | Ward confirmed live: sign-in, create project, and the project shell all work end-to-end. **Phase 3 complete.** |
+| 2026-10-13 | - | Ward noticed every page is extremely plain (no styling at all) and asked if that gets fixed. It was deliberate (functionality first, no dedicated styling step was in the plan) — added a new **Phase 8 – Visual design** between the old Phase 7 and 8, renumbering old 8→9 and 9→10, so there's one deliberate styling pass across everything built so far rather than restyling each phase's pages piecemeal. |
+| 2026-10-13 | - | Ward was getting a nightly failure email from the `backup.yml` GitHub Action — it was scheduled from Phase 1 but needs a `SUPABASE_DB_URL` secret that was never set up (intentionally deferred to Phase 10). Paused the cron schedule (commented out, `workflow_dispatch` still works) rather than finishing the setup now, since backups aren't needed yet with only demo data in place. |
+| 2026-10-14 | 4 | Built `Team.tsx`: member list, admin-gated add/edit (including the `is_active` toggle as the "deactivate", no separate delete), and "Link login" (search `profiles` by email, since there's no Admin API/service-role key available client-side to invite someone directly — the person has to sign in once themselves first). Wired into `App.tsx`, replacing the `ComingSoon` placeholder. Learned from the Phase 3 RETURNING incident, so every insert/update in this file deliberately skips `.select()` — verified by reading each call, not just assumed. `npm run build` clean, dev server serves the new page with no console errors. **Not yet tested live.** |
 
 ---
 
 ## 8. Resume here (next session)
 
-Phase 0–3 are complete and confirmed live. Small cleanup + two decisions still open from Phase 3 (not blocking, but shouldn't be forgotten):
+Phase 0–3 are complete and confirmed live. Phase 4 (Team) is built and builds clean, but **not yet tested live** — needs Ward:
 
-1. Drop the diagnostic leftover on the live project: in the Supabase SQL Editor, `drop table if exists rls_test;`.
-2. The two-user/two-project RLS sanity check (create a second real login, confirm each user only sees their own project) — nice to have before real data goes in, not urgent with only Ward using it so far.
-3. In Supabase Auth settings: disable sign-up, and decide how magic-link should behave for a `project_members` row with no linked login yet (see BUILD_PLAN §3.3 — needs an actual decision, not just a toggle, since `project_members` rows can exist for people without logins).
-4. Keep an eye out for the same `RETURNING`-requires-a-SELECT-policy pattern in later phases — anywhere code does `.insert(...).select()` or `.update(...).select()` on a row the user might not yet have SELECT-visibility into. Same fix shape every time: either don't ask for the row back, or make sure visibility exists first.
+1. Once deployed, open a project you're admin of → **Team** tab. Try: add a member (name only is required), edit one, toggle their active status, and — once you've got a second real email to test with — try "Link login" (that person needs to have signed in at least once first, even without being added to a project yet, since signing in is what creates their `profiles` row).
+2. If anything errors, paste it and I'll dig in — same as always, but hopefully a quicker fix this time since Phase 3 already burned down most of the plausible RLS gotchas.
 
-Then start **Phase 4 – Team**: team list, add/edit/deactivate member, invite member as a user (link a login + access level).
+Small cleanup + decisions still open from Phase 3 (not blocking, but shouldn't be forgotten):
+
+3. Drop the diagnostic leftover on the live project: in the Supabase SQL Editor, `drop table if exists rls_test;`.
+4. The two-user/two-project RLS sanity check (create a second real login, confirm each user only sees their own project) — Phase 4's "Link login" test above doubles as part of this.
+5. In Supabase Auth settings: disable sign-up, and decide how magic-link should behave for a `project_members` row with no linked login yet (see BUILD_PLAN §3.3 — needs an actual decision, not just a toggle, since `project_members` rows can exist for people without logins).
+6. Keep an eye out for the `RETURNING`-requires-a-SELECT-policy pattern in later phases too — anywhere code does `.insert(...).select()` or `.update(...).select()` on a row the user might not yet have SELECT-visibility into.
+
+Then start **Phase 5 – Meetings and minutes**.
 
 Note for later, not blocking: local Postgres 16 **and** 17 are now installed on this machine (via Homebrew) purely as dev/test tools — not part of the app, nothing deploys from them. Useful for testing future migrations/RLS changes against the matching major version before they touch the live project (the live project is on PG 17.11).

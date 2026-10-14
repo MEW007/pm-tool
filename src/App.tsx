@@ -6,6 +6,7 @@ import { supabase } from './lib/supabase'
 import Login from './pages/Login'
 import ProjectSelect from './pages/ProjectSelect'
 import ProjectShell from './pages/ProjectShell'
+import Team from './pages/Team'
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth()
@@ -62,7 +63,7 @@ export default function App() {
             <Route path="actions" element={<ComingSoon title="Actions" phase="Phase 6" />} />
             <Route path="decisions" element={<ComingSoon title="Decisions" phase="Phase 7" />} />
             <Route path="risks" element={<ComingSoon title="Risks" phase="Phase 7" />} />
-            <Route path="team" element={<ComingSoon title="Team" phase="Phase 4" />} />
+            <Route path="team" element={<Team />} />
             <Route path="settings" element={<ComingSoon title="Settings" phase="a later phase" />} />
           </Route>
           <Route path="*" element={<Navigate to="/projects" replace />} />
