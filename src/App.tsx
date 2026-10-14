@@ -57,7 +57,7 @@ export default function App() {
             }
           >
             <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<ComingSoon title="Dashboard" phase="Phase 8" />} />
+            <Route path="dashboard" element={<ComingSoon title="Dashboard" phase="Phase 9" />} />
             <Route path="meetings" element={<ComingSoon title="Meetings" phase="Phase 5" />} />
             <Route path="actions" element={<ComingSoon title="Actions" phase="Phase 6" />} />
             <Route path="decisions" element={<ComingSoon title="Decisions" phase="Phase 7" />} />

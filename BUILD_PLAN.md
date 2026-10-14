@@ -19,7 +19,7 @@ Online project management tool for running projects through meetings, minutes, a
 | 2026-10-06 | UI language | **English** |
 | 2026-10-06 | Frontend | Vite + React + TypeScript + `supabase-js` (proposed default, see open questions) |
 | 2026-10-06 | Repo | New separate repo `pm-tool`, **public** on GitHub |
-| 2026-10-06 | Supabase tier | **Free tier** to start, mitigated with keep-alive job (Phase 9); revisit Pro later if needed |
+| 2026-10-06 | Supabase tier | **Free tier** to start, mitigated with keep-alive job (Phase 10); revisit Pro later if needed |
 | 2026-10-06 | Data scope | Not a PSA/client tool — this is a **private tool for Delaport ventures**; no third-party employer data-policy constraint |
 
 ---
@@ -31,10 +31,10 @@ Online project management tool for running projects through meetings, minutes, a
 | Q1 | Separate GitHub repo for the tool (e.g. `pm-tool`)? | The current VSStudio repo only tracks `Projects/PSA`. GitHub Pages works best with one repo per app. | **Yes**, new repo `pm-tool` |
 | Q2 | Public or private repo? | GitHub Pages on a **private** repo needs a paid GitHub plan (Pro/Team). A public repo is safe because there are no secrets in the code: data is protected by login + RLS. | **Public** |
 | Q3 | Is storing project data on Supabase allowed by company policy? | Data sits on a third-party cloud (EU region). | **N/A** — this is not a PSA/client or employer project, it's a private tool for Delaport ventures. No employer data-policy constraint applies. |
-| Q4 | Supabase free tier or Pro (~25 USD/month)? | Free projects **pause after 7 days without activity** and have no automatic backups. Mitigated by a keep-alive and nightly backup job (Phase 9), Pro removes the issue. | **Free**, start with keep-alive job; revisit Pro later |
+| Q4 | Supabase free tier or Pro (~25 USD/month)? | Free projects **pause after 7 days without activity** and have no automatic backups. Mitigated by a keep-alive and nightly backup job (Phase 10), Pro removes the issue. | **Free**, start with keep-alive job; revisit Pro later |
 | Q5 | In a follow-up meeting, show open actions of **that meeting series only**, or **all open project actions**? | Default proposal: series only, with a toggle "show all project actions". | Proposed default accepted |
 | Q6 | Can action owners be people outside the team (e.g. contractor contacts without login)? | Proposal: yes, team members do not need a login. Only members with a login can edit. | Proposed default accepted |
-| Q7 | Minutes output: printable/PDF view needed? Distribution by email? | Proposal: print-friendly view (browser → PDF) in Phase 8. Email distribution later. | Proposed default accepted |
+| Q7 | Minutes output: printable/PDF view needed? Distribution by email? | Proposal: print-friendly view (browser → PDF) in Phase 9. Email distribution later. | Proposed default accepted |
 
 ---
 
@@ -223,12 +223,29 @@ that use them, so they got their own file rather than being folded into 001/003)
 - [ ] Risk updates linked to meetings
 - [ ] Decision log page
 
-### Phase 8 – Dashboard and output
+### Phase 8 – Visual design
+Everything through Phase 7 is deliberately unstyled (plain inline styles, no
+color/spacing system) so functionality could be nailed down first without
+restyling the same page twice. This phase is a single design pass across
+*all* pages built so far, rather than styling each phase's pages as they're
+built.
+- [ ] Pick a simple color palette + spacing scale, as CSS variables (no UI
+      framework/library — stay dependency-light, per `.instructions.md`'s
+      "simple, readable code" guidance)
+- [ ] Shared layout primitives (card, button, input, nav) used consistently
+      across Login, ProjectSelect, ProjectShell's nav, and every page added
+      in Phases 4–7
+- [ ] Consistent typography (one font stack, a defined heading/body scale)
+- [ ] Responsive check: usable on a laptop screen and a phone, since meetings
+      often get reviewed on the go
+- [ ] Replace the `ComingSoon` placeholder styling too, so it matches
+
+### Phase 9 – Dashboard and output
 - [ ] Dashboard: actions, risks (heat map), meetings, decisions
 - [ ] Print-friendly minutes view (PDF via browser)
 - [ ] Export actions/risks to CSV/Excel
 
-### Phase 9 – Hardening
+### Phase 10 – Hardening
 - [ ] Keep-alive job (free tier)
 - [ ] Nightly backup job — `backup.yml` exists but its schedule is **paused** (commented out) because it was failing every night with no `SUPABASE_DB_URL` secret configured, emailing Ward. To finish: add that secret (Supabase Settings → Database → Connection string → the URI one, as a GitHub repo **secret**, not variable), then uncomment the `schedule:` block in `.github/workflows/backup.yml`.
 - [ ] Audit: created_by / updated_by on all tables
