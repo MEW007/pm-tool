@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PSA-MoM viewer v/*@VERSION*/</title>
+  <!-- ka-livedata-manifest: entry 1 = the SharePoint list (identical to the Project Status Dashboard).
+       TODO (open item): add the three CSV files of the data folder in the official manifest syntax once known:
+         <datamap>/_export/vergaderingen.csv, <datamap>/_export/minuten.csv, <datamap>/_export/acties.csv  (format "csv").
+       readLiveData() in viewer.js recognises each CSV by its columns, so the key/order of the entries does not matter. -->
+  <script type="application/json" class="ka-livedata-manifest">[{"kind":"list","spItemUrl":"list:https://globalpsaemea.sharepoint.com/sites/PSAA-TDSPE-Engineering/b94bc706-de01-4691-b60d-e7874f9940cc","webUrl":"https://globalpsaemea.sharepoint.com/sites/PSAA-TDSPE-Engineering","listId":"b94bc706-de01-4691-b60d-e7874f9940cc","listServerRelativeUrl":"/sites/PSAA-TDSPE-Engineering/Lists/Project%20budgets%20%20SNOW%20ref","select":["Title","field_1","field_2","field_3","field_4","field_5","field_6","field_7","field_8","field_9","field_11","field_12","PMPerson"]}]</script>
+  <style>
+    :root{color-scheme:light;--page:#f3f4f6;--card:#fff;--ink:#242424;--muted:#616161;--line:#dedede;--soft:#f7f8fa;--blue:#0078d4;--focus:#005a9e}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--page);color:var(--ink);font-family:"Segoe UI",Arial,sans-serif}body{padding:14px}
+    header{margin:0 0 12px}h1{font-size:27px;line-height:1.2;margin:0 0 5px;font-weight:650}.ver{font-size:13px;color:var(--muted);font-weight:500}
+    .subtitle{margin:0;color:var(--muted);font-size:14px}.source{margin:6px 0 0;font-size:12px}.source.live{color:#107c10}.source.snapshot{color:#8a4b00;background:#fff4ce;border-left:4px solid #ffb900;padding:6px 10px;border-radius:4px}
+    .card{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,.035)}
+    .vtabs{display:flex;gap:6px;margin:0 0 12px}.vtabs button{height:36px;border:1px solid #c8c6c4;border-radius:6px;background:#fff;padding:0 14px;font:inherit;font-weight:600;cursor:pointer}.vtabs button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+    .filters{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr)) minmax(240px,2fr);gap:10px;align-items:end;padding:14px;margin-bottom:12px}
+    label{display:block;font-size:11px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 5px}
+    select,input{height:38px;width:100%;font:inherit;border:1px solid #c8c6c4;border-radius:6px;background:#fff;color:var(--ink);padding:0 10px}
+    select:focus,input:focus{outline:2px solid var(--focus);outline-offset:1px}
+    .kpis{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:12px;margin-bottom:12px}.kpi{padding:14px 18px}.kpi-label{font-size:12px;text-transform:uppercase;letter-spacing:.045em;color:var(--muted);font-weight:650}.kpi-value{font-size:28px;font-weight:700;margin-top:4px}.kpi-value.bad{color:#a4262c}
+    .section{padding:16px;margin-bottom:12px;overflow:hidden}.section h2{font-size:18px;margin:0 0 12px;font-weight:650}.section h3{font-size:15px;margin:14px 0 4px}.section h4{font-size:13px;margin:8px 0 2px}
+    .table-wrap{width:100%;overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:12px}
+    th,td{padding:8px;border-bottom:1px solid #e7e7e7;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{background:var(--soft);color:#4b4b4b;font-weight:650}
+    tbody tr:hover{background:#f8fbfe}tr.late td{background:#fde7e9}tr.click{cursor:pointer}.num{text-align:right;white-space:nowrap}.nowrap{white-space:nowrap}.muted{color:var(--muted)}
+    a{color:var(--blue)}.empty{padding:20px;text-align:center;color:var(--muted);background:var(--soft);border-radius:6px}
+    .status-pill{display:inline-block;padding:2px 8px;border-radius:12px;white-space:nowrap;font-weight:600}
+    .status-0{background:#edebe9;color:#323130}.status-1{background:#deecf9;color:#004578}.status-2{background:#fff4ce;color:#8a4b00}.status-3{background:#e8daf5;color:#5c2d91}.status-4{background:#dff6dd;color:#0b6a0b}.status-5{background:#fde7e9;color:#a4262c}.status-6{background:#f3f2f1;color:#605e5c}
+    .ty{font-size:11px;font-weight:650;padding:0 5px;border-radius:4px}.ty-Actie{background:#ffedd5;color:#9a3412}.ty-Beslissing{background:#dff6dd;color:#0b6a0b}
+    .mom .mh th{width:1%;white-space:nowrap}.mom h3.sec{border-bottom:2px solid var(--blue);padding-bottom:2px;margin-top:18px}.mom ul{margin:2px 0 8px;padding-left:20px}
+    @media(max-width:900px){.filters{grid-template-columns:1fr 1fr}.filters .search{grid-column:1/-1}.kpis{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+/*@CORE*/
+/*@VIEWER*/
+</script>
+</body>
+</html>

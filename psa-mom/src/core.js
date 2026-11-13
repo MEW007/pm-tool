@@ -153,7 +153,7 @@ function personEmail(v){
  if(s[0]==='{'||s[0]==='['){try{return personEmail(JSON.parse(s))}catch(e){}}
  const m=s.match(/[A-Za-z0-9._%+'-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);return m?m[0].toLowerCase():'';
 }
-const lookupText=v=>{const s=text(v);return s[0]==='{'||s[0]==='['?personName(s):s};
+const lookupText=v=>{if(v&&typeof v==='object')return personName(v);const s=text(v);return s[0]==='{'||s[0]==='['?personName(s):s};
 /* "GI23111-GI24115" -> [GI23111, GI24115]; "GI25071-24109" -> [GI25071, GI24109]. A bare 5-digit number
    only counts as a GI code when the cell contains at least one explicit "GI" code. */
 function parseGiCodes(raw){
@@ -164,18 +164,21 @@ function parseGiCodes(raw){
 }
 const isGi=s=>/^GI\d{5}$/.test(s||'');
 const isTmp=s=>/^TMP-[a-z0-9-]+$/.test(s||'');
-function parseProjectsCsv(t){
- const rows=parseCsvRows(t);if(!rows.length)return{rows:[],projects:[],byGi:{},noGi:[],missing:Object.keys(FIELD_KEYS)};
- const hdr=rows[0].map(x=>x.trim().toLowerCase());const pos={};const missing=[];
+function parseProjectsCsv(t){const rows=parseCsvRows(t);return parseProjectTable(rows[0]||[],rows.slice(1))}
+/* headers + row arrays; cells may be text or objects (SharePoint live data 'rows' format, person/choice fields) */
+function parseProjectTable(headers,data){
+ if(!headers||!headers.length)return{rows:[],projects:[],byGi:{},noGi:[],missing:Object.keys(FIELD_KEYS)};
+ const rows=[headers,...(data||[])].map(r=>r.map(x=>x==null?'':x));
+ const hdr=rows[0].map(x=>String(x).trim().toLowerCase());const pos={};const missing=[];
  Object.keys(FIELD_KEYS).forEach(k=>{pos[k]=-1;for(const n of FIELD_KEYS[k]){const i=hdr.indexOf(n.toLowerCase());if(i>=0){pos[k]=i;break}}if(pos[k]<0&&!OPTIONAL_FIELDS.includes(k))missing.push(k)});
  if(pos.pm<0&&pos.pmPerson<0)missing.push('pm');
  const out=[];
- rows.slice(1).filter(r=>r.some(x=>x.trim()!=='')).forEach((r,i)=>{
+ rows.slice(1).filter(r=>r.some(x=>text(typeof x==='object'?personName(x):x)!=='')).forEach((r,i)=>{
   const c=k=>pos[k]>=0?(r[pos[k]]??''):'';
   const person=c('pmPerson');
-  const row={rij:i+1,listId:text(c('listId')),portfolio:lookupText(c('portfolio')),year:normalizeYear(lookupText(c('year'))),location:lookupText(c('location')),
+  const row={rij:i+1,listId:lookupText(c('listId')),portfolio:lookupText(c('portfolio')),year:normalizeYear(lookupText(c('year'))),location:lookupText(c('location')),
    budgetCode:lookupText(c('budgetCode')),omschrijving:lookupText(c('project')),giRaw:lookupText(c('projectCode')),
-   budgetRaw:text(c('budget')),pifRaw:text(c('pif')),status:normalizeStatus(c('status')),
+   budgetRaw:lookupText(c('budget')),pifRaw:lookupText(c('pif')),status:normalizeStatus(c('status')),
    pmNaam:personName(person)||lookupText(c('pm')),pmEmail:personEmail(c('pmEmail'))||personEmail(person),
    dmnd:lookupText(c('dmnd')),prj:lookupText(c('prj'))};
   row.gi=parseGiCodes(row.giRaw);row.budget=parseCurrencyValue(row.budgetRaw);row.pif=parseCurrencyValue(row.pifRaw);
@@ -856,7 +859,7 @@ function projectDossierMd(gi,ctx){
 /* ---------- exports for Node (tests) ---------- */
 const PSAMoMCore={APP_VERSION,BUILD,SCHEMA,ITEM_TYPES,ACT_STATUS,ACT_OPEN,ACT_CLOSED,PRIO,ALG,ALG_REG,ACT_COLS,EXTRA_COLS,VALID_STATUSES,NL_MARK,DEFAULT_TYPES,MIGRATIONS,
  setNow,now,today,stamp,clone,uniq,oneLine,touchAction,fmt,fmtStamp,normDate,normStamp,dd,addDays,slug,initials,fold,h,decodeBytes,detectSep,parseCsvRows,parseCsv,toCsv,
- normalizeYear,parseCurrencyValue,formatEuro,normalizeStatus,statusClass,personName,personEmail,parseGiCodes,isGi,isTmp,parseProjectsCsv,groupProjects,matchProject,matchQuery,
+ normalizeYear,parseCurrencyValue,formatEuro,hasMoney,parseProjectTable,normalizeStatus,statusClass,personName,personEmail,parseGiCodes,isGi,isTmp,parseProjectsCsv,groupProjects,matchProject,matchQuery,
  parsePersonen,parsePersonenExtra,serializePersonenExtra,buildPeople,personCodes,searchPeople,personLabel,personByName,
  defaultConfig,normalizeConfig,typeOf,topicList,topicName,topicNrByName,addTopic,addType,topicRef,parseTopicRef,pendingMigrations,runMigrations,
  meetingIdFor,meetingPath,regKeyFor,regPath,newMeeting,ensureSection,sectionItems,serializeMeeting,parseMeeting,gateItem,meetingItems,decisionIds,

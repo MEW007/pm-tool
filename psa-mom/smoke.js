@@ -250,6 +250,30 @@ S.hooks.confirm=async()=>true;
   console.log(`  prestatie: laden ${ms} ms (in-memory), 5 schermen renderen ${rms} ms`);ok(ms<3000,'load took '+ms+' ms');
  });
 
+ await step('23. viewer (phase 2): reads mocked __LD_RESULTS__ (rows + CSV text or {headers,rows}), renders the 3 views',async()=>{
+  const vhtml=fs.readFileSync(path.join(HERE,'release','PSA-MoM-viewer.html'),'utf8');
+  ok(!/fetch\(|localStorage|sessionStorage|indexedDB|XMLHttpRequest/.test(vhtml.split('/*CORE-END*/').pop().replace(/[\s\S]*\/\* PSA-MoM viewer/,'')),'viewer code uses no network or storage');
+  const js=vhtml.slice(vhtml.lastIndexOf('<script>')+8,vhtml.lastIndexOf('</script>'));
+  const app=new El();let handlers={};app.addEventListener=(t,f)=>{handlers[t]=f};
+  const rows=vm.runInContext('parseCsvRows',sandbox)(fs.readFileSync(path.join(HERE,'voorbeelddata/_bron/projecten.csv'),'utf8'));
+  const exp=n=>fs.readFileSync(path.join(HERE,'voorbeelddata/_export/'+n+'.csv'),'utf8');
+  const asRows=t=>{const r=vm.runInContext('parseCsvRows',sandbox)(t);return{headers:r[0],rows:r.slice(1).filter(x=>x.some(Boolean))}};
+  for(const variant of ['text','rows']){
+   const vs={console,TextDecoder,setTimeout,clearTimeout,Date,Math,JSON,Intl,document:{getElementById:()=>app,activeElement:null},window:{scrollTo(){}}};
+   vs.window.__LD_RESULTS__={a:{format:'rows',content:JSON.stringify({headers:rows[0],rows:rows.slice(1)})},
+    b:{format:'csv',content:variant==='text'?exp('minuten'):asRows(exp('minuten'))},c:{format:'csv',content:variant==='text'?exp('acties'):asRows(exp('acties'))},d:{format:'csv',content:variant==='text'?exp('vergaderingen'):asRows(exp('vergaderingen'))}};
+   vm.createContext(vs);vm.runInContext(js,vs);vm.runInContext("setNow('2026-11-13T10:00:00');window.PSAMoMViewer.renderV()",vs);
+   const Vw=vs.window.PSAMoMViewer.V;eq(Vw.proj.projects.length,19,'list rows');eq(Vw.verg.length,8);ok(Vw.min.length>20&&Vw.acts.length>10);
+   ok(app.innerHTML.includes('● Live data'),'source line');ok(app.innerHTML.includes('Achterstallig')&&app.innerHTML.includes('A-GI24115-AC-001'));
+   ok(Vw.min.some(m=>m.tekst.includes('\n')),'⏎ decoded to line breaks');
+   const click=ds=>handlers.click({target:{closest:()=>({dataset:ds,tagName:'A'})},preventDefault(){}});
+   click({gi:'GI22074'});ok(app.innerHTML.includes('HV connection ET and NZT to 150kV_part1')&&app.innerHTML.includes('Tijdlijn')&&app.innerHTML.includes('B-20261106-AC-01'),'project view');
+   click({mid:'2026-11-06_ee-projectoverleg'});ok(app.innerHTML.includes('Aanwezig')&&app.innerHTML.includes('Kabelwerken gegund'),'meeting MoM view');
+  }
+  const none={console,TextDecoder,setTimeout,clearTimeout,Date,Math,JSON,Intl,document:{getElementById:()=>app,activeElement:null},window:{}};
+  vm.createContext(none);vm.runInContext(js,none);ok(app.innerHTML.includes('Niet alle data'),'missing live data is reported');
+ });
+
  console.log(`smoke.js: ${pass} geslaagd, ${fail} mislukt`);
  if(fail){fails.forEach(f=>console.log('  ✗ '+f));process.exit(1)}
  process.exit(0);

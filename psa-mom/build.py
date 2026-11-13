@@ -25,6 +25,21 @@ def stamp(js, version, build):
     return js.replace("/*@VERSION*/'dev'", repr(version)).replace("/*@BUILD*/'dev'", repr(build))
 
 
+def mock_results():
+    """window.__LD_RESULTS__ built from voorbeelddata/ (local testing of the viewer only; never deploy this file)."""
+    import csv, io
+    base = os.path.join(HERE, "voorbeelddata")
+    if not os.path.isdir(base):
+        return ""
+    def txt(p):
+        return open(os.path.join(base, p), encoding="utf-8-sig").read()
+    rows = list(csv.reader(io.StringIO(txt("_bron/projecten.csv"))))
+    res = {"list": {"format": "rows", "content": {"headers": rows[0], "rows": rows[1:]}}}
+    for n in ("vergaderingen", "minuten", "acties"):
+        res["csv_" + n] = {"format": "csv", "content": txt(f"_export/{n}.csv")}
+    return "window.__LD_RESULTS__=" + json.dumps(res, ensure_ascii=False).replace("</", "<\\/") + ";"
+
+
 def find_node():
     """node on PATH, or the portable Node next to the portable Python (C:\\...\\.tools\\node-v*)."""
     exe = shutil.which("node")
@@ -60,6 +75,7 @@ def main():
         vhtml = (read("viewer/template.html").replace("/*@VERSION*/", version)
                  .replace("/*@CORE*/", core).replace("/*@VIEWER*/", read("viewer/viewer.js")))
         write("release/PSA-MoM-viewer.html", vhtml)
+        write("build/viewer-demo.html", vhtml.replace("<script>\n", "<script>\n" + mock_results() + "\n", 1))
 
     print(f"build: {out} ({len(html)//1024} KB), build {build}")
     node = find_node()

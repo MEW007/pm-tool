@@ -72,6 +72,10 @@ test('projects CSV with display names, ; and BOM',()=>{
  const r=C.parseProjectsCsv(PROJ_DISPLAY);const p=r.byGi.GI25022;
  eq(p.naam,'Pavement');eq(p.rows[0].year,'2026');eq(p.budget,400000);eq(p.pmNamen,['Jo Test']);eq(p.rows[0].listId,'9');
 });
+test('project table from SharePoint live rows (objects in person/choice cells)',()=>{
+ const r=C.parseProjectTable(['ID','Title','field_1','field_4','field_5','field_7','field_8','PMPerson'],[[3,'PSAA',2025,'Lift',"GI23111-GI24115",'120000',{Value:'2 execution'},{DisplayName:'Koen G',Email:'koen@x.be'}]]);
+ eq(r.byGi.GI24115.statuses,['2 execution']);eq(r.byGi.GI24115.pmEmails,['koen@x.be']);eq(r.byGi.GI23111.pif,120000);eq(r.rows[0].listId,'3');
+});
 test('project filters and search',()=>{
  const r=C.parseProjectsCsv(PROJ_INTERNAL);const p=r.byGi.GI22074;
  assert(C.matchProject(p,{q:'150kv prj0021523'}));assert(!C.matchProject(p,{q:'parking'}));
