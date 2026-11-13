@@ -181,4 +181,4 @@ Removing a topic = deactivate. Field-level merge (conflict only on the same fiel
 - No Word template yet. Adding the official PSAA template = one more renderer on `momModel()` (next to `renderMomMd/Text/Html`).
 - An action cannot be created outside a meeting. Actions always originate in minutes.
 - Linking a `TMP-…` project to a real GI code is manual for now: rename the register file, `gi_code` and the section heading.
-- Lock file names start with a dot. If SharePoint/OneDrive does not sync them, change `lockName()` in `core.js` (one line).
+- Lock file names start with a dot; confirmed to sync to SharePoint (PSA laptop, 13/11/2026). Should that ever change, adapt `lockName()` in `core.js` (one line).

@@ -38,6 +38,7 @@ Doorlopen op 13/11/2026 met de demodata (`voorbeelddata/`). Ze is op twee manier
 - [ ] Openen vanuit de **echt gesynchroniseerde OneDrive-map** in Edge (bestand via `file://`), map kiezen en "Map (her)openen" na het herstarten van Edge.
 - [ ] Laadtijd met de echte bibliotheek. De meting hierboven is zonder schijf- en OneDrive-vertraging; het echte bestandssysteem voegt per bestand enkele milliseconden toe. Bij 700+ bestanden wordt dat ±1–2 s; oudere jaren laden op de achtergrond.
 - [ ] Een echte OneDrive-conflictkopie: wijzig hetzelfde actieregister offline op twee pc's en synchroniseer daarna.
-- [ ] Of OneDrive/SharePoint lockbestanden **met een punt vooraan** (`.…md.lock`) synchroniseert. Zo niet: `lockName()` in `core.js` aanpassen.
+- [x] Of OneDrive/SharePoint lockbestanden **met een punt vooraan** (`.…md.lock`) synchroniseert: ✅ bevestigd op de PSA-laptop (bestand aangemaakt door Edge, zichtbaar in SharePoint, groen vinkje).
+- [ ] Melding "Wordt bewerkt door …" op een tweede pc (gepland).
 - [ ] Power Automate-flows (zie POWER-AUTOMATE.md) en de kolomnamen van de echte export.
 - [ ] Viewer in SharePoint zodra de manifestsyntaxis voor CSV-bestanden gekend is.
