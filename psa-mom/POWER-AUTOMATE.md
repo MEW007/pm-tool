@@ -7,7 +7,7 @@ PSA-MoM kan SharePoint en Microsoft Graph niet zelf aanspreken. Twee flows schri
 | `_bron/projecten.csv` | Flow 1 "Projectlijst → CSV" | kopie van de lijst **Project budgets & SNOW ref** |
 | `_bron/personen.csv` | Flow 2 "Personen → CSV" | leden van de Microsoft 365-groepen van SPE en PMO |
 
-Beide flows gebruiken enkel **standaardconnectoren** (SharePoint, Office 365 Groepen, Office 365 Gebruikers, Gegevensbewerking, Planning). De tool leest zowel komma- als puntkomma-gescheiden bestanden, met of zonder BOM, en zowel interne kolomnamen (`field_1`, …) als weergavenamen (`Year`, …).
+De namen van acties staan in het Nederlands met de Engelse naam erbij (*cursief*). Beide flows gebruiken enkel **standaardconnectoren** (SharePoint, Office 365 Groepen, Office 365 Gebruikers, Gegevensbewerking, Planning). De tool leest zowel komma- als puntkomma-gescheiden bestanden, met of zonder BOM, en zowel interne kolomnamen (`field_1`, …) als weergavenamen (`Year`, …).
 
 > **Datamap** = de map in de documentbibliotheek van de site *PSAA-TDSPE-Engineering* waarin ook `_config.json` en het HTML-bestand van de tool staan. Hieronder noemen we haar `Gedeelde documenten/PSA-MoM` – vervang dit door het echte pad.
 
@@ -33,15 +33,15 @@ Een flow kan maar één trigger hebben. Je maakt daarom **twee kopieën van deze
 
 1. Ga naar [make.powerautomate.com](https://make.powerautomate.com) → **Maken** → **Geautomatiseerde cloudstroom**.
    Naam: `PSA-MoM – Projectlijst naar CSV (bij wijziging)`.
-2. Trigger: **SharePoint – Wanneer een item wordt gemaakt of gewijzigd**
+2. Trigger: **SharePoint – Wanneer een item wordt gemaakt of gewijzigd** (*When an item is created or modified*)
    - *Siteadres*: `PSAA-TDSPE-Engineering`
    - *Lijstnaam*: `Project budgets & SNOW ref`
    - Open bij de trigger **Instellingen** → **Gelijktijdigheidsbeheer** = **Aan**, *Mate van parallellisme* = **1**. Zo schrijven twee runs nooit tegelijk naar het bestand.
-3. Actie **SharePoint – Items ophalen**
+3. Actie **SharePoint – Items ophalen** (*Get items*)
    - *Siteadres* en *Lijstnaam*: zoals hierboven
    - *Bovenste aantal*: `5000`
    - **Instellingen** → **Paginering** = **Aan**, *Drempel* = `5000` (of hoger als de lijst ooit groter wordt).
-4. Actie **Gegevensbewerking – Selecteren**
+4. Actie **Gegevensbewerking – Selecteren** (*Data Operation – Select*)
    - *Van*: `value` (uitvoer van *Items ophalen*)
    - Klik rechts op het icoon **Overschakelen naar tekstmodus** en plak:
    ```json
@@ -65,12 +65,12 @@ Een flow kan maar één trigger hebben. Je maakt daarom **twee kopieën van deze
    ```
    - Is *Status* (`field_8`) een **keuzekolom**? Gebruik dan `item()?['field_8/Value']`. (Doe je dit niet, dan werkt het ook: de tool herkent `{"Value": "2 execution"}` zelf.)
    - `PMEmail` is optioneel, maar aanbevolen: daarmee koppelt de tool de PM betrouwbaar aan een persoon (filter "Mijn projecten").
-5. Actie **Gegevensbewerking – CSV-tabel maken**
+5. Actie **Gegevensbewerking – CSV-tabel maken** (*Create CSV table*)
    - *Van*: uitvoer van *Selecteren*; *Kolommen*: **Automatisch**.
-6. Actie **SharePoint – Bestandsmetagegevens ophalen via pad**
-   - *Siteadres*: `PSAA-TDSPE-Engineering`
-   - *Bestandspad*: `/Gedeelde documenten/PSA-MoM/_bron/projecten.csv`
-7. Actie **SharePoint – Bestand bijwerken**
+6. Actie **SharePoint – Bestandsmetagegevens ophalen via pad** (*Get file metadata using path*; **niet** *Get file properties*)
+   - *Siteadres*: kies **Aangepaste waarde invoeren** (*Enter custom value*) en typ enkel `https://globalpsaemea.sharepoint.com/sites/PSAA-TDSPE-Engineering` (de keuze uit de lijst met de weergavenaam ervoor gaf de fout "Site Address … is not valid")
+   - *Bestandspad*: blader met het mapicoon naar `PSA-MoM/_bron/projecten.csv` (het bestand moet al bestaan, zie stap 0)
+7. Actie **SharePoint – Bestand bijwerken** (*Update file*)
    - *Siteadres*: `PSAA-TDSPE-Engineering`
    - *Bestands-id*: `Id` (uitvoer van stap 6)
    - *Bestandsinhoud*: uitvoer van *CSV-tabel maken*
@@ -81,7 +81,7 @@ Een flow kan maar één trigger hebben. Je maakt daarom **twee kopieën van deze
 ### 1b. Dagelijks om 06:00
 
 1. Open de flow van 1a → **…** → **Opslaan als** → naam `PSA-MoM – Projectlijst naar CSV (dagelijks)`.
-2. Open de kopie, verwijder de trigger en kies **Planning – Terugkeerpatroon**:
+2. Open de kopie, verwijder de trigger en kies **Planning – Terugkeerpatroon** (*Schedule – Recurrence*):
    *Interval* `1`, *Frequentie* `Dag`, *Tijdzone* `(UTC+01:00) Brussel…`, *Op deze uren* `6`, *Op deze minuten* `0`.
 3. Opslaan en **Inschakelen** (een kopie staat standaard uit).
 
