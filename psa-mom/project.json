@@ -1,0 +1,29 @@
+{
+  "name": "PSA-MoM",
+  "version": "0.9.0",
+  "schema": 1,
+  "description": "Meeting minutes (MoM) and action tracking for SPE Engineering and PMO, PSA Antwerp. Single self-contained HTML file; data = files in a synced SharePoint library folder.",
+  "build": "python build.py  ->  release/PSA-MoM-v<version>.html, release/PSA-MoM-viewer.html, build/combined.js; runs test.js and smoke.js",
+  "sources": {
+    "src/core.js": "pure logic (CSV, project list, people, config, meeting .md, action registers, IDs, merge, exports, MoM renderers)",
+    "src/app.js": "editor UI + File System Access storage, merge-on-save, locks, conflict copies",
+    "src/style.css": "look & feel (from the 1-op-1 Manager) + MoM print layout",
+    "src/template.html": "editor shell",
+    "viewer/viewer.js": "phase 2: read-only SharePoint viewer (ka-livedata-manifest)",
+    "viewer/template.html": "viewer shell incl. manifest"
+  },
+  "files": {
+    "_config.json": "JSON: {schema, vergadertypes:[{id,naam,projectgebonden,actief,topics:[{nr,naam,actief}],volgorde}], instellingen}",
+    "_bron/projecten.csv": "read-only copy of the SharePoint list 'Project budgets & SNOW ref' (Power Automate or manual export); internal (field_1..) or display column names; , or ; ; BOM optional",
+    "_bron/personen.csv": "read-only, Power Automate: naam;email;afdeling;functie;groep (SPE|PMO)",
+    "personen-extra.csv": "maintained in the tool: email;naam;organisatie;functie;type(intern|extern);actief(ja|nee);sleutel",
+    "vergaderingen/YYYY/YYYY-MM-DD_<type>[-n].md": "one meeting = YAML front matter + '## <GI>|Algemeen' + '### <nr>. <topic>' + '- [Info|Beslissing|Actie] ...'",
+    "vergaderingen/YYYY/.<file>.md.lock": "advisory soft lock JSON {gebruiker,naam,sinds,ververst}; ignored after 2 h",
+    "acties/<GI-code>.csv | acties/_algemeen.csv | acties/TMP-<slug>.csv": "action register (source of truth for actions): id;gi_code;vergadering;datum_geidentificeerd;topic(<type>:<nr>);actie;eigenaar;deadline;prioriteit;status;afgesloten_op;afsluiting;verloop( || );aangemaakt_door;gewijzigd_door;gewijzigd_op",
+    "_export/vergaderingen.csv, minuten.csv, acties.csv": "derived, rebuilt by the editor; line breaks as ⏎; read by the viewer",
+    "_backup/": "<datum>_<code>/<pad> = copy before first write per day; pre-migratie-vX/; conflicten/",
+    "_rapporten/": "generated MoM (.md) and project dossiers"
+  },
+  "csv": "UTF-8 with BOM, separator ;, every field quoted, CRLF, ISO dates (yyyy-mm-dd), stamps yyyy-mm-ddThh:mm:ss local time",
+  "migrations": []
+}

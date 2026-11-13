@@ -1,0 +1,6 @@
+{
+  "name": "psa-mom",
+  "private": true,
+  "type": "commonjs",
+  "description": "PSA-MoM: standalone single-file tool, see README.md. No npm dependencies; build with python build.py."
+}

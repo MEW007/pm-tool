@@ -1,0 +1,127 @@
+{
+ "schema": 1,
+ "vergadertypes": [
+  {
+   "id": "ee-projectoverleg",
+   "naam": "E&E projectoverleg",
+   "projectgebonden": true,
+   "actief": true,
+   "topics": [
+    {
+     "nr": 1,
+     "naam": "Veiligheid",
+     "actief": true
+    },
+    {
+     "nr": 2,
+     "naam": "Planning & mijlpalen",
+     "actief": true
+    },
+    {
+     "nr": 3,
+     "naam": "Budget & PIF",
+     "actief": true
+    },
+    {
+     "nr": 4,
+     "naam": "Techniek & ontwerp",
+     "actief": true
+    },
+    {
+     "nr": 5,
+     "naam": "Aankoop & contracten",
+     "actief": true
+    },
+    {
+     "nr": 6,
+     "naam": "Vergunningen & stakeholders",
+     "actief": true
+    },
+    {
+     "nr": 7,
+     "naam": "Risico's & issues",
+     "actief": true
+    },
+    {
+     "nr": 8,
+     "naam": "Varia",
+     "actief": true
+    }
+   ],
+   "volgorde": null
+  },
+  {
+   "id": "pmo-review",
+   "naam": "PMO-review",
+   "projectgebonden": true,
+   "actief": true,
+   "topics": [
+    {
+     "nr": 1,
+     "naam": "Status & planning",
+     "actief": true
+    },
+    {
+     "nr": 2,
+     "naam": "Budget & PIF",
+     "actief": true
+    },
+    {
+     "nr": 3,
+     "naam": "Risico's & issues",
+     "actief": true
+    },
+    {
+     "nr": 4,
+     "naam": "Beslissingen nodig",
+     "actief": true
+    },
+    {
+     "nr": 5,
+     "naam": "Varia",
+     "actief": true
+    }
+   ],
+   "volgorde": null
+  },
+  {
+   "id": "teammeeting",
+   "naam": "Teammeeting",
+   "projectgebonden": false,
+   "actief": true,
+   "topics": [
+    {
+     "nr": 1,
+     "naam": "Veiligheid",
+     "actief": true
+    },
+    {
+     "nr": 2,
+     "naam": "Mededelingen",
+     "actief": true
+    },
+    {
+     "nr": 3,
+     "naam": "Planning & werkverdeling",
+     "actief": true
+    },
+    {
+     "nr": 4,
+     "naam": "Opleiding",
+     "actief": true
+    },
+    {
+     "nr": 5,
+     "naam": "Varia",
+     "actief": true
+    }
+   ],
+   "volgorde": null
+  }
+ ],
+ "instellingen": {
+  "exportDebounceSec": 10,
+  "lockMaxUur": 2,
+  "versheidDagen": 7
+ }
+}

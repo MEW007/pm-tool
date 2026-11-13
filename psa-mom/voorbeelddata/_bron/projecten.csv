@@ -1,0 +1,31 @@
+ID,Title,field_1,field_2,field_3,field_4,field_5,field_6,field_7,field_8,field_9,field_11,field_12,PMPerson,PMEmail
+100,PSAA,2024,NZT+ET,166.26CAF0850-01,High Tension Connection (150kV),GI22074,5520000,0,1 design,Jan Peeters,,PRJ0021523,Jan Peeters,jan.peeters@voorbeeld.be
+103,PSAA,2024,NZT+ET,166.EM-CIV-04-09,HV connection ET and NZT to 150kV_part1,GI22074,,11150000,2 execution,Jan Peeters,DMND0045120,PRJ0021523,Jan Peeters,jan.peeters@voorbeeld.be
+106,PSAA,2024,NZT+ET,166.24CAF0850-02-01,HV connection ET and NZT to 150kV_part2,GI22074,,13900000,1 design,Jan Peeters,DMND0045121,PRJ0021523,Jan Peeters,jan.peeters@voorbeeld.be
+109,PSAA,2026,NZT+ET,166.26CAF0400-31,NT + ET_Invest in extra EV capacity,GI26057,200000,0,0 not started,Jan Peeters,,,Jan Peeters,jan.peeters@voorbeeld.be
+112,PSAA,2026,NZT+ET,166.26CAF0400-31-01,NT + ET_Invest in extra EV capacity,GI26057,,200000,0 not started,Jan Peeters,DMND0051877,,Jan Peeters,jan.peeters@voorbeeld.be
+115,PSAA,2026,NZT,166.26CAF0400-52-01,NT + ET_Invest in extra EV capacity,GI26057,,130000,0 not started,Jan Peeters,,PRJ0078468,Jan Peeters,jan.peeters@voorbeeld.be
+118,WDK,2028,WD,TBD,Refurbishment elevator motors,GI23111-GI24115,30000,0,0 not started,Tom Vermeulen,,,Tom Vermeulen,tom.vermeulen@voorbeeld.be
+121,WDK,2026,WD,166.26CAF0800-09-01,Refurbishment elevators,GI23111-GI24115,,120000,2 execution,Koen Goossens,,PRJ0071909,Koen Goossens,koen.goossens@voorbeeld.be
+124,PSAA,2025,NZT+ET,166.25CAE0782-02-01,Replacement of 10 CCTV cameras,GI25071-24109,,50000,2 execution,Lotte Willems,,,Lotte Willems,lotte.willems@voorbeeld.be
+127,PSAA,2025,NZT,166.25CAF0400-18-01,Centralized Service Station SC's NZT (extended scope),GI22075,150000,920000,1 design,Nathalie Dubois,,PRJ0035665,Nathalie Dubois,nathalie.dubois@voorbeeld.be
+130,PSAA,2025,NZT+ET,166.25CAF0400-43-01,Combined Service Station – Extra Safety Features,GI22075,,75000,1 design,Nathalie Dubois,,PRJ0068954,Nathalie Dubois,nathalie.dubois@voorbeeld.be
+133,PSAA,2025,NZT+ET,166.25CAF0400-04-OPEX,Pavement renewal 2025 increase,GI25022,,400000,3 closing,Dirk Van Damme,,PRJ0060650,Dirk Van Damme,dirk.vandamme@voorbeeld.be
+136,PSAA,2026,NZT+ET,166.26CAF0400-42,PRJ - Upgrading Fire & Evacuation Devices on Operational Buildings,GI24058,100000,0,0 not started,Tom Vermeulen,,,Tom Vermeulen,tom.vermeulen@voorbeeld.be
+139,PSAA,2025,NZT+ET,166.25CAF0400-45-01,2 Factor Authentication (fingerscans),GI25084,,350000,2 execution,Sofie Wouters,,PRJ0020810,Sofie Wouters,sofie.wouters@voorbeeld.be
+142,PSAA,2026,NZT,166.26CAF0400-06,NT_15.5kV connection HS1 & HS2,GI24101,1650000,0,6 not selected,Wim Maes,,,Wim Maes,wim.maes@voorbeeld.be
+145,PSAA,2027,NZT,166.26CAF0400-01,NT_Replace end-of-life HT Cabins HS01 & HS02 and connect to 150/36 kV Power Supply,GI24101,10450000,0,1 design,Wim Maes,DMND0049902,PRJ0059050,Wim Maes,wim.maes@voorbeeld.be
+148,PSAA,2026,NZT+ET,166.26CAF0400-03,Interterminal fiber connection HS20 – HS07 via TP136,GI24104,,250000,1 design,Wim Maes,,PRJ0065893,Wim Maes,wim.maes@voorbeeld.be
+151,PSAA,2026,NZT,166.26CAF0400-28-01,NT_Re-Surface former MO Building Area,GI25091,,2065000,1 design,Nathalie Dubois,,PRJ0072129,Nathalie Dubois,nathalie.dubois@voorbeeld.be
+154,PSAA,2025,NZT,166.25CAF0400-50-01,NZT New Marine Ops building,GI25091,,7000000,1 design,Nathalie Dubois,,PRJ0061313,Nathalie Dubois,nathalie.dubois@voorbeeld.be
+157,PSAA,2026,NZT,26CAF0400-46-02,NT Extra SC Parking Spots with Safe Access,GI26078,,12520000,2 execution,Dirk Van Damme,,PRJ0080552,Dirk Van Damme,dirk.vandamme@voorbeeld.be
+160,PSAA,2025,NZT+ET,166.25CAF0400-30-01,Rollout of ANPR cameras,GI25095,,90000,2 execution,Pieter Jacobs,,PRJ0069381,Pieter Jacobs,pieter.jacobs@voorbeeld.be
+163,WDK,2025,WD,166.25CAF0800-03,Fire detection + emergency lighting 2025,GI24076,60000,0,2 execution,Koen Goossens,,PRJ0069819,Koen Goossens,koen.goossens@voorbeeld.be
+166,WDK,2027,WD,TBD,Fit for Future and Intermediate upgrades,GI23063,500000,0,0 not started,Wout Michiels,,,Wout Michiels,wout.michiels@voorbeeld.be
+169,WDK,2025,WD,166.25CAF0800-05-01,Fit for Future and Intermediate upgrades WD 2025,GI25049,,980000,2 execution,Sarah Lambrecht,,PRJ0069819,Sarah Lambrecht,sarah.lambrecht@voorbeeld.be
+172,PSABB,2024,CT-North,PSA Breakbulk-2023-CIVIL-11,PSABB New Gate In Q494,GI21069,300000,0,5 on hold,Sarah Lambrecht,,,Sarah Lambrecht,sarah.lambrecht@voorbeeld.be
+175,PSABB,2025,CT-South,TBD,PSAB New parking blue collars Q494,,800000,0,5 on hold,Sarah Lambrecht,,,Sarah Lambrecht,sarah.lambrecht@voorbeeld.be
+178,PSABB,2024,CT-North,PSA Breakbulk-2023-CIVIL-10,PSABB Admin Building Q494,,1000000,0,5 on hold,Sarah Lambrecht,,,Sarah Lambrecht,sarah.lambrecht@voorbeeld.be
+181,PSABB,2024,CT-South,TBD,Q408 Bestaande kraanputten operationaliseren,,TBD,0,5 on hold,Dirk Van Damme,,,Dirk Van Damme,dirk.vandamme@voorbeeld.be
+184,PSAA,2026,ET,166.26CAF0400-16,Replacement Heater workshop Q869,,120000,0,6 not selected,Koen Goossens,,,Koen Goossens,koen.goossens@voorbeeld.be
+187,PSAA,2026,NZT+ET,166.26CAF0400-48,"Rollout of new detection systems (Lidar, AI)",,150000,0,0 not started,Lotte Willems,,,Lotte Willems,lotte.willems@voorbeeld.be
