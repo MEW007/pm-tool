@@ -122,11 +122,14 @@ All logic that can be pure is in `core.js` and exported for Node. `app.js` holds
 
 ### Build & test (Windows laptop)
 
+Run it **from the `psa-mom` folder** (or pass the full path to `build.py`; it locates its own files):
+
 ```
+cd <your clone>\psa-mom
 C:\Users\mrtns_wa\CC.projects\.tools\python-3.12.8-embed-amd64\python.exe build.py
 ```
 
-`build.py` finds Node on `PATH`, or next to the portable Python (`.tools\node-v*\node.exe`). It runs `test.js` and `smoke.js` and exits with code 1 if either fails. To run them separately: `node test.js` and `node smoke.js` (smoke needs `build/combined.js`, so run the build first). Optional real-browser check, if Playwright is available: `node tools/e2e-chromium.js`.
+Running `python.exe build.py` from another folder (e.g. the Python folder) gives "can't open file … build.py". `build.py` finds Node on `PATH`, or next to the portable Python (`.tools\node-v*\node.exe`). It runs `test.js` and `smoke.js` and exits with code 1 if either fails. To run them separately: `node test.js` and `node smoke.js` (smoke needs `build/combined.js`, so run the build first). Optional real-browser check, if Playwright is available: `node tools/e2e-chromium.js`.
 
 Bump the version in `project.json` for every release. The file name of the release follows it.
 
