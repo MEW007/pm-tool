@@ -1,6 +1,6 @@
 {
   "name": "PSA-MoM",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "schema": 1,
   "description": "Meeting minutes (MoM) and action tracking for SPE Engineering and PMO, PSA Antwerp. Single self-contained HTML file; data = files in a synced SharePoint library folder.",
   "build": "python build.py  ->  release/PSA-MoM-v<version>.html, release/PSA-MoM-viewer.html, build/combined.js; runs test.js and smoke.js",

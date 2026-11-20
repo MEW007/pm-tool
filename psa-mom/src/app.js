@@ -34,7 +34,31 @@ async function dirAt(path,create){
 }
 async function readFile(p){try{const [d,n]=splitPath(p);const fh=await(await dirAt(d,false)).getFileHandle(n);const f=await fh.getFile();return{text:decodeBytes(await f.arrayBuffer()),mt:f.lastModified}}catch(e){return null}}
 async function statFile(p){try{const [d,n]=splitPath(p);const fh=await(await dirAt(d,false)).getFileHandle(n);return(await fh.getFile()).lastModified}catch(e){return null}}
-async function writeFile(p,t){const [d,n]=splitPath(p);const fh=await(await dirAt(d,true)).getFileHandle(n,{create:true});const w=await fh.createWritable();await w.write(t);await w.close();return(await fh.getFile()).lastModified}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const RETRY_ERR=['NotFoundError','InvalidStateError','NoModificationAllowedError','InvalidModificationError'];
+/* OneDrive can briefly hold or replace a file right after a write: retry, and name file + sub-step in the error. */
+async function withRetry(what,fn){
+ let phase={t:''};
+ for(let attempt=1;;attempt++){
+  try{return await fn(phase)}
+  catch(e){
+   if(attempt<3&&RETRY_ERR.includes(e&&e.name)){dirCache.clear();await sleep(400*attempt);continue}
+   const err=new Error(`${e&&e.message||e} [${what}${phase.t?'; deelstap: '+phase.t:''}; poging ${attempt}]`);err.name=e&&e.name||'Error';throw err;
+  }
+ }
+}
+async function ensureDir(p){return withRetry('map: '+p,async ph=>{ph.t='map aanmaken/openen';return dirAt(p,true)})}
+async function writeFile(p,t){
+ const [d,n]=splitPath(p);
+ return withRetry('bestand: '+p,async ph=>{
+  ph.t='map openen';const dir=await dirAt(d,true);
+  ph.t='bestand openen';const fh=await dir.getFileHandle(n,{create:true});
+  ph.t='schrijven';const w=await fh.createWritable();await w.write(t);
+  ph.t='afsluiten';await w.close();
+  ph.t='datum lezen';
+  try{return(await fh.getFile()).lastModified}catch(e){await sleep(300);try{return(await(await dir.getFileHandle(n)).getFile()).lastModified}catch(x){return Date.now()}}
+ });
+}
 async function removeFile(p){try{const [d,n]=splitPath(p);await(await dirAt(d,false)).removeEntry(n);return true}catch(e){return false}}
 async function listDir(p){const out=[];try{const dir=await dirAt(p,false);for await(const [name,hd] of dir.entries())out.push({name,kind:hd.kind})}catch(e){}return out}
 async function pool(items,n,fn){let i=0;const run=async()=>{while(i<items.length){const k=i++;await fn(items[k],k)}};await Promise.all(Array.from({length:Math.min(n,items.length)},run))}
@@ -76,7 +100,7 @@ async function openRootInner(hd){
  const c=await readFile('_config.json');
  if(!c){
   if(!await ask('Deze map bevat nog geen PSA-MoM-gegevens (_config.json ontbreekt).\n\nWil je de mapstructuur hier aanmaken? Kies enkel OK als dit de gedeelde map in de SharePoint-bibliotheek is.')){S.root=null;return}
-  for(const d of ['vergaderingen','acties','_bron','_export','_backup','_rapporten']){loadStep(`Mapstructuur aanmaken: map ${d}`);await dirAt(d,true)}
+  for(const d of ['vergaderingen','acties','_bron','_export','_backup','_rapporten']){loadStep(`Mapstructuur aanmaken: map ${d}`);await ensureDir(d)}
   loadStep('Bestand personen-extra.csv aanmaken');if(!await readFile('personen-extra.csv'))await writeFile('personen-extra.csv',serializePersonenExtra([]));
   loadStep('Bestand _config.json schrijven');const cfg=defaultConfig();S.cfgMt=await writeFile('_config.json',cfgText(cfg));S.cfg=cfg;
  }else{
@@ -418,7 +442,7 @@ function render(){
  if(!HAS_DOM)return;const app=$('#app');if(!app)return;const foc=captureFocus();const sc=window.scrollY||0;
  const footer=`<footer>PSA-MoM · versie ${APP_VERSION} · gegevensschema ${S.cfg?S.cfg.schema:SCHEMA} · build ${BUILD}</footer>`;
  if(!S.root){app.innerHTML=welcome()+footer;return}
- if(S.loadErr){app.innerHTML=`<div class="welcome"><h2>Inlezen mislukt</h2><p>Stap: <b>${h(S.loadErr.step)}</b></p><p>Foutmelding: <code>${h(S.loadErr.msg)}</code></p>
+ if(S.loadErr){app.innerHTML=`<div class="welcome"><h2>Inlezen mislukt</h2><p>Stap: <b>${h(S.loadErr.step)}</b></p><p>Foutmelding: <code>${h(S.loadErr.msg)}</code></p>${/NotFoundError/.test(S.loadErr.msg)?'<div class="warn"><b>Map hernoemd of verplaatst?</b> De browser onthoudt de map via haar pad. Klik op <b>Andere map kiezen</b> en kies de map opnieuw.</div>':''}
   <p class="muted small">Controleer in Verkenner of de map volledig gesynchroniseerd is (groen vinkje, geen rode kruisjes) en of je schrijfrechten hebt op de map in SharePoint. Bezorg deze stap en foutmelding aan de beheerder van PSA-MoM als het probleem blijft.</p>
   <p><button class="pri" data-a="retry">Opnieuw proberen</button> <button class="sec" data-a="pick">Andere map kiezen</button></p></div>`+footer;return}
  if(S.loading||!S.cfg){app.innerHTML=`<div class="welcome"><p>Bezig met inlezen…</p><p class="muted small" id="loadstep">${h(S.loadStep||'')}</p><div id="loadslow" class="warn" style="display:none">Deze stap duurt ongewoon lang. Controleer of OneDrive de map volledig gesynchroniseerd heeft (groen vinkje) en of je schrijfrechten hebt. <button class="sec sm" data-a="retry">Opnieuw proberen</button></div></div>`+footer;return}

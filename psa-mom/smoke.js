@@ -289,6 +289,16 @@ S.hooks.confirm=async()=>true;
   await A.openRoot(root);ok(!S.loadErr,'recovers on a good folder');
  });
 
+ await step('26. OneDrive hiccup: a file that briefly disappears after writing is retried; errors name the file and sub-step',async()=>{
+  const od=new MemDir('PSA-MoM');put(od,'_bron/projecten.csv',get(root,'_bron/projecten.csv'));
+  const origF=od.getFileHandle.bind(od);let fails=1;
+  od.getFileHandle=async(n,o)=>{const fh=await origF(n,o);if(n==='_config.json'){const g=fh.getFile.bind(fh);fh.getFile=async()=>{if(fails-->0)throw Object.assign(new Error('A requested file or directory could not be found'),{name:'NotFoundError'});return g()}}return fh};
+  await A.openRoot(od);ok(!S.loadErr,'recovered: '+JSON.stringify(S.loadErr));ok(has(od,'_config.json'));
+  const gone=new MemDir('PSA-MoM');gone.getDirectoryHandle=async()=>{throw Object.assign(new Error('A requested file or directory could not be found at the time an operation was processed.'),{name:'NotFoundError'})};
+  await A.openRoot(gone);ok(S.loadErr&&/\[map: vergaderingen; deelstap: map aanmaken\/openen; poging 3\]/.test(S.loadErr.msg),'path + sub-step in message: '+(S.loadErr&&S.loadErr.msg));A.render();ok(html().includes('Map hernoemd of verplaatst?'),'rename hint');
+  await A.openRoot(root);ok(!S.loadErr);
+ });
+
  console.log(`smoke.js: ${pass} geslaagd, ${fail} mislukt`);
  if(fail){fails.forEach(f=>console.log('  ✗ '+f));process.exit(1)}
  process.exit(0);
