@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PSA-MoM v0.9.0</title>
+<title>PSA-MoM v0.9.1</title>
 <style>
 /* PSA-MoM – look & feel of the 1-op-1 Manager (header, nav, cards, dialogs, toast, footer) + MoM print layout */
 *{box-sizing:border-box}body{margin:0;font:14px/1.45 "Segoe UI",system-ui,sans-serif;color:#1f2937;background:#f3f4f6}
@@ -98,7 +98,7 @@ select.ty.ty-Actie{background:#fff7ed}select.ty.ty-Beslissing{background:#ecfdf5
    Everything here must stay deterministic and testable in Node.
    ===================================================================== */
 'use strict';
-const APP_VERSION='0.9.0',BUILD='2026-11-13',SCHEMA=1;
+const APP_VERSION='0.9.1',BUILD='2026-11-20',SCHEMA=1;
 
 /* ---------- constants ---------- */
 const ITEM_TYPES=['Actie','Beslissing','Info'];
@@ -988,7 +988,7 @@ const byDateDesc=(a,b)=>b.datum.localeCompare(a.datum)||b.id.localeCompare(a.id)
 
 /* ---------- key/value store (IndexedDB; memory fallback) ---------- */
 const KV={mem:{},db:null,
- open(){return this.db||(this.db=new Promise((res,rej)=>{const r=indexedDB.open('psa-mom',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}))},
+ open(){return this.db||(this.db=new Promise((res,rej)=>{const r=indexedDB.open('psa-mom',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);r.onblocked=()=>rej(new Error('IndexedDB geblokkeerd'));setTimeout(()=>rej(new Error('IndexedDB antwoordt niet')),4000)}))},
  async get(k){if(typeof indexedDB==='undefined')return this.mem[k];try{const d=await this.open();return await new Promise(r=>{const q=d.transaction('k').objectStore('k').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>r(undefined)})}catch(e){return this.mem[k]}},
  async set(k,v){this.mem[k]=v;if(typeof indexedDB==='undefined')return;try{const d=await this.open();await new Promise(r=>{const t=d.transaction('k','readwrite');t.objectStore('k').put(v,k);t.oncomplete=()=>r();t.onerror=()=>r()})}catch(e){}}};
 
@@ -1022,27 +1022,44 @@ async function pickFolder(){
 }
 async function reopen(){const hd=await KV.get('root');if(!hd)return pickFolder();const p=await hd.requestPermission({mode:'readwrite'});if(p!=='granted')return;await openRoot(hd)}
 const cfgText=c=>JSON.stringify(c,null,1)+'\n';
+/* Loading shows its current step; any failure ends on an error screen (never a silent "Bezig met inlezen…"). */
+function loadStep(t){S.loadStep=t;S.loadStepAt=Date.now();if(HAS_DOM){const e=$('#loadstep');if(e)e.textContent=t}}
 async function openRoot(hd){
+ S.loading=true;S.loadErr=null;
+ const watch=HAS_DOM?setInterval(()=>{if(!S.loading)return clearInterval(watch);if(Date.now()-S.loadStepAt>20000){const e=$('#loadslow');if(e)e.style.display='block'}},2000):null;
+ try{await openRootInner(hd)}
+ catch(e){S.loadErr={step:S.loadStep||'',msg:`${e&&e.name||'Error'}: ${e&&e.message||e}`};setStatus('Inlezen mislukt','bad');if(typeof console!=='undefined')console.error('PSA-MoM openRoot',S.loadStep,e)}
+ finally{S.loading=false;if(watch)clearInterval(watch)}
+ render();
+ if(!S.loadErr&&S.root&&S.cfg){
+  if(!S.user||!S.people.byKey[S.user])whoAmI();
+  try{if(S.pendingYears.length){for(const y of [...S.pendingYears]){await loadYear(y);S.pendingYears=S.pendingYears.filter(x=>x!==y)}render()}}catch(e){toast('Oudere jaren konden niet gelezen worden: '+e.message)}
+  scheduleExport(true);
+ }
+}
+async function openRootInner(hd){
  const t0=Date.now();
- Object.assign(S,{root:hd,M:{},R:{},copies:[],edit:null,ro:false,view:'dash',p:{},loadedYears:new Set(),pendingYears:[],backedUp:new Set(),readOnlyAll:false});
- dirCache.clear();setStatus('Bezig met inlezen…','warn');render();
+ Object.assign(S,{root:hd,cfg:null,M:{},R:{},copies:[],edit:null,ro:false,view:'dash',p:{},loadedYears:new Set(),pendingYears:[],backedUp:new Set(),readOnlyAll:false});
+ dirCache.clear();setStatus('Bezig met inlezen…','warn');loadStep('Map controleren (_config.json)');render();
  const c=await readFile('_config.json');
  if(!c){
-  if(!await ask('Deze map bevat nog geen PSA-MoM-gegevens (_config.json ontbreekt).\n\nWil je de mapstructuur hier aanmaken? Kies enkel OK als dit de gedeelde map in de SharePoint-bibliotheek is.')){S.root=null;render();return}
-  S.cfg=defaultConfig();S.cfgMt=await writeFile('_config.json',cfgText(S.cfg));
-  for(const d of ['vergaderingen','acties','_bron','_export','_backup','_rapporten'])await dirAt(d,true);
-  if(!await readFile('personen-extra.csv'))await writeFile('personen-extra.csv',serializePersonenExtra([]));
+  if(!await ask('Deze map bevat nog geen PSA-MoM-gegevens (_config.json ontbreekt).\n\nWil je de mapstructuur hier aanmaken? Kies enkel OK als dit de gedeelde map in de SharePoint-bibliotheek is.')){S.root=null;return}
+  for(const d of ['vergaderingen','acties','_bron','_export','_backup','_rapporten']){loadStep(`Mapstructuur aanmaken: map ${d}`);await dirAt(d,true)}
+  loadStep('Bestand personen-extra.csv aanmaken');if(!await readFile('personen-extra.csv'))await writeFile('personen-extra.csv',serializePersonenExtra([]));
+  loadStep('Bestand _config.json schrijven');const cfg=defaultConfig();S.cfgMt=await writeFile('_config.json',cfgText(cfg));S.cfg=cfg;
  }else{
-  try{S.cfg=normalizeConfig(JSON.parse(c.text))}catch(e){setStatus('_config.json is ongeldig: '+e.message,'bad');S.cfg=null;S.root=null;render();alert('_config.json kan niet gelezen worden ('+e.message+'). Herstel het bestand (bv. via OneDrive-versiegeschiedenis) en probeer opnieuw.');return}
+  try{S.cfg=normalizeConfig(JSON.parse(c.text))}catch(e){throw new Error('_config.json kan niet gelezen worden ('+e.message+'). Herstel het bestand (bv. via de versiegeschiedenis in SharePoint) en probeer opnieuw.')}
   S.cfgMt=c.mt;
  }
- await loadBron();await loadRegisters();
- const years=await listYears();const cy=String(now().getFullYear());
+ loadStep('Projectlijst en personen lezen (_bron/projecten.csv, _bron/personen.csv, personen-extra.csv)');await loadBron();
+ loadStep('Actieregisters lezen (map acties)');await loadRegisters();
+ loadStep('Vergaderingen zoeken (map vergaderingen)');const years=await listYears();const cy=String(now().getFullYear());
  const first=years.filter(y=>y>=String(+cy-1));S.pendingYears=years.filter(y=>!first.includes(y));
- for(const y of first)await loadYear(y);
+ for(const y of first){loadStep(`Vergaderingen lezen (map vergaderingen/${y})`);await loadYear(y)}
  let note='';
  if(S.cfg.schema>SCHEMA){S.readOnlyAll=true;note=` – LET OP: gegevensschema ${S.cfg.schema} is nieuwer dan deze versie (${SCHEMA}); open de nieuwste PSA-MoM-versie uit de bibliotheek. Alles is alleen-lezen.`}
  else if(pendingMigrations(S.cfg).length){
+  loadStep('Gegevens migreren (met back-up)');
   for(const y of S.pendingYears)await loadYear(y);S.pendingYears=[];
   const from=S.cfg.schema||1;await fullBackup(`_backup/pre-migratie-v${from}`);
   const ctx={cfg:S.cfg,meetings:allMeetings(),registers:S.R,rewrite:false};const r=runMigrations(ctx);
@@ -1050,11 +1067,8 @@ async function openRoot(hd){
   S.cfgMt=await writeFile('_config.json',cfgText(S.cfg));await saveAll();
   note=` – gegevens gemigreerd van schema ${from} naar ${S.cfg.schema} (back-up in _backup/pre-migratie-v${from})`;
  }
- S.user=(await KV.get('user'))||'';S.loadMs=Date.now()-t0;
- setStatus(`Geladen ${hhmm()} (${S.loadMs} ms)${note}`,S.readOnlyAll?'bad':'ok');render();
- if(!S.user||!S.people.byKey[S.user])whoAmI();
- if(S.pendingYears.length){for(const y of [...S.pendingYears]){await loadYear(y);S.pendingYears=S.pendingYears.filter(x=>x!==y)}render()}
- scheduleExport(true);
+ loadStep('Gebruiker ophalen (browseropslag)');S.user=(await KV.get('user'))||'';S.loadMs=Date.now()-t0;
+ setStatus(`Geladen ${hhmm()} (${S.loadMs} ms)${note}`,S.readOnlyAll?'bad':'ok');
 }
 async function loadBron(){
  const p=await readFile('_bron/projecten.csv');
@@ -1372,7 +1386,10 @@ function render(){
  if(!HAS_DOM)return;const app=$('#app');if(!app)return;const foc=captureFocus();const sc=window.scrollY||0;
  const footer=`<footer>PSA-MoM · versie ${APP_VERSION} · gegevensschema ${S.cfg?S.cfg.schema:SCHEMA} · build ${BUILD}</footer>`;
  if(!S.root){app.innerHTML=welcome()+footer;return}
- if(!S.cfg){app.innerHTML=`<div class="welcome"><p>Bezig met inlezen…</p></div>`+footer;return}
+ if(S.loadErr){app.innerHTML=`<div class="welcome"><h2>Inlezen mislukt</h2><p>Stap: <b>${h(S.loadErr.step)}</b></p><p>Foutmelding: <code>${h(S.loadErr.msg)}</code></p>
+  <p class="muted small">Controleer in Verkenner of de map volledig gesynchroniseerd is (groen vinkje, geen rode kruisjes) en of je schrijfrechten hebt op de map in SharePoint. Bezorg deze stap en foutmelding aan de beheerder van PSA-MoM als het probleem blijft.</p>
+  <p><button class="pri" data-a="retry">Opnieuw proberen</button> <button class="sec" data-a="pick">Andere map kiezen</button></p></div>`+footer;return}
+ if(S.loading||!S.cfg){app.innerHTML=`<div class="welcome"><p>Bezig met inlezen…</p><p class="muted small" id="loadstep">${h(S.loadStep||'')}</p><div id="loadslow" class="warn" style="display:none">Deze stap duurt ongewoon lang. Controleer of OneDrive de map volledig gesynchroniseerd heeft (groen vinkje) en of je schrijfrechten hebt. <button class="sec sm" data-a="retry">Opnieuw proberen</button></div></div>`+footer;return}
  let main='';try{main=(VIEWS[S.view]||VIEWS.dash)()}catch(e){main=`<div class="warn">Fout bij tonen van dit scherm: ${h(e.message)}</div>`;if(typeof console!=='undefined')console.error(e)}
  app.innerHTML=headerHtml()+`<div class="layout">${navHtml()}<main id="main">${main}</main></div>`+footer;
  const key=S.view+'|'+(S.p.id||S.p.gi||'');if(typeof window.scrollTo==='function')window.scrollTo(0,key===S.ui.lastKey?sc:0);S.ui.lastKey=key;restoreFocus(foc);
@@ -1790,7 +1807,7 @@ async function onClick(ev){
  if(b.closest&&b.closest('dialog')&&!['pp-add','pp-del','pp-new','ms-clear'].includes(b.dataset.a))return;
  const a=b.dataset.a;if(b.tagName==='A')ev.preventDefault();
  try{switch(a){
-  case'pick':return pickFolder();case'reopen':return reopen();case'sync':return syncCheck();case'backup':return backupNow();
+  case'pick':return pickFolder();case'reopen':return reopen();case'retry':return S.root?openRoot(S.root):reopen();case'sync':return syncCheck();case'backup':return backupNow();
   case'reload':await saveAll();await releaseLock();return openRoot(S.root);
   case'whoami':return whoAmI();
   case'view':S.view=b.dataset.v;if(S.view==='set')S.ui.cfgDraft=null;return render();
@@ -1879,6 +1896,7 @@ if(HAS_DOM){
  window.addEventListener('focus',()=>{if(Date.now()-S.lastCheck>20000)checkExternal().catch(()=>{})});
  setInterval(()=>{if(S.root&&!S.saving)checkExternal().catch(()=>{})},120000);
  window.addEventListener('beforeunload',ev=>{if(S.lock)releaseLock();if(anyDirty()){saveAll();ev.preventDefault();ev.returnValue=''}});
+ window.addEventListener('unhandledrejection',ev=>{const e=ev.reason;setStatus('Fout: '+(e&&e.message||e),'bad');toast('Fout: '+(e&&e.message||e))});
  (async()=>{render();const hd=await KV.get('root').catch(()=>null);if(hd&&hd.queryPermission){const p=await hd.queryPermission({mode:'readwrite'});if(p==='granted')openRoot(hd)}})();
 }
 const PSAMoMApp={S,cmd,KV,render,openRoot,saveAll,checkExternal,scanCopies,mergeCopy,syncCheck,rebuildExports,openMeeting,closeMeeting,releaseLock,actById,regOfAct,projInfo,projName,allMeetings,allActions,onClick,onField,VIEWS,findItem,keys,mdCtx,backupNow};

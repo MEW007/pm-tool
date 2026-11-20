@@ -20,7 +20,7 @@ Vergadering → Project (GI-code) → Topic → Item (Actie / Beslissing / Info)
 
 ### 2. De tool starten
 
-1. Open in Verkenner de gesynchroniseerde map en dubbelklik op **PSA-MoM-v0.9.0.html** (open met **Microsoft Edge**; Chrome werkt ook, Firefox niet).
+1. Open in Verkenner de gesynchroniseerde map en dubbelklik op **PSA-MoM-v&lt;versie&gt;.html** (nu v0.9.1) (open met **Microsoft Edge**; Chrome werkt ook, Firefox niet).
 2. Klik de eerste keer op **Map kiezen** en kies de map **PSA-MoM** zelf (de map waarin `_config.json` staat). Bevestig *Bestanden bewerken*.
 3. De volgende keren onthoudt Edge de map: klik op **Map (her)openen**.
 

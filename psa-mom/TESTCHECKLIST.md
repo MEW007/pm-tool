@@ -1,4 +1,4 @@
-# Testchecklist PSA-MoM v0.9.0
+# Testchecklist PSA-MoM v0.9.0 (v0.9.1: + eerste start op lege map, foutscherm bij inlezen)
 
 Doorlopen op 13/11/2026 met de demodata (`voorbeelddata/`). Ze is op twee manieren afgewerkt:
 

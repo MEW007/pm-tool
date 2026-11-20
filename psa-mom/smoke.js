@@ -274,6 +274,21 @@ S.hooks.confirm=async()=>true;
   vm.createContext(none);vm.runInContext(js,none);ok(app.innerHTML.includes('Niet alle data'),'missing live data is reported');
  });
 
+ await step('24. first start on an empty library folder: structure created, list read, start screen shown',async()=>{
+  const fresh=new MemDir('PSA-MoM');put(fresh,'_bron/projecten.csv',fs.readFileSync(path.join(HERE,'voorbeelddata/_bron/projecten.csv'),'utf8'));
+  await A.openRoot(fresh);ok(!S.loadErr,'no load error: '+JSON.stringify(S.loadErr));ok(!S.loading);
+  ok(has(fresh,'_config.json')&&has(fresh,'personen-extra.csv'),'config + personen-extra written');
+  for(const d of ['vergaderingen','acties','_export','_backup','_rapporten'])ok(fresh.c.get(d)&&fresh.c.get(d).kind==='directory','folder '+d);
+  eq(S.proj.projects.length,19);ok(view('dash').includes('Projectlijst: 30 rijen'));
+ });
+ await step('25. a failing write ends on an error screen with the step and the message (no endless "Bezig met inlezen")',async()=>{
+  const bad=new MemDir('PSA-MoM');const orig=bad.getFileHandle.bind(bad);
+  bad.getFileHandle=async(n,o)=>{if(n==='_config.json'&&o&&o.create)throw Object.assign(new Error('Toegang geweigerd'),{name:'NoModificationAllowedError'});return orig(n,o)};
+  await A.openRoot(bad);ok(S.loadErr,'error recorded');eq(S.loadErr.step,'Bestand _config.json schrijven');
+  A.render();const x=html();ok(x.includes('Inlezen mislukt')&&x.includes('NoModificationAllowedError: Toegang geweigerd')&&x.includes('Opnieuw proberen'),'error screen');
+  await A.openRoot(root);ok(!S.loadErr,'recovers on a good folder');
+ });
+
  console.log(`smoke.js: ${pass} geslaagd, ${fail} mislukt`);
  if(fail){fails.forEach(f=>console.log('  ✗ '+f));process.exit(1)}
  process.exit(0);
